@@ -348,11 +348,11 @@ def demo_loop_detector():
     print("-" * 60)
     
     steps = [
-        ExecutionStep(1, "search", {"query": "Python"}, {"results": [...]}, True),
+        ExecutionStep(1, "search", {"query": "Python"}, {"results": ["result1", "result2"]}, True),
         ExecutionStep(2, "analyze", {"data": "results"}, {"analysis": "..."}, True),
-        ExecutionStep(3, "search", {"query": "Python tutorials"}, {"results": [...]}, True),
+        ExecutionStep(3, "search", {"query": "Python tutorials"}, {"results": ["tutorial1", "tutorial2"]}, True),
         ExecutionStep(4, "analyze", {"data": "tutorials"}, {"analysis": "..."}, True),
-        ExecutionStep(5, "search", {"query": "Python"}, {"results": [...]}, True),  # Loop!
+        ExecutionStep(5, "search", {"query": "Python"}, {"results": ["result1", "result2"]}, True),  # Loop!
         ExecutionStep(6, "analyze", {"data": "results"}, {"analysis": "..."}, True),  # Loop!
     ]
     

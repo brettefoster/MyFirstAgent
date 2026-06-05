@@ -14,6 +14,8 @@ Run with: python agent.py
 
 import json
 import os
+import ast
+import operator
 import time
 from typing import Dict, Any, List, Optional, Generator
 from dataclasses import dataclass, field
@@ -29,7 +31,7 @@ sys.path.append('stage5_reflection_loop')
 from raw_stream import GeminiStream
 from state_machine import AgentState
 from stream_parser import StreamParser, ToolCall
-from tool_registry import ToolRegistry, ToolResult
+from tool_registry import ToolRegistry, ToolResult, safe_eval
 from loop_detector import LoopDetector, ExecutionStep, Backtracker, ErrorFormatter
 
 
@@ -108,9 +110,9 @@ class FinalAgent:
         def calculate(expression: str) -> str:
             """Perform a mathematical calculation."""
             try:
-                result = eval(expression, {"__builtins__": {}}, {})
+                result = safe_eval(expression)
                 return f"Result: {result}"
-            except Exception as e:
+            except (ValueError, SyntaxError, Exception) as e:
                 return f"Error: {e}"
     
     def run(self, user_message: str) -> AgentResponse:

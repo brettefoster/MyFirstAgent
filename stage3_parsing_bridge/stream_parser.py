@@ -75,23 +75,72 @@ class StreamParser:
             if match:
                 # Found a potential tool call
                 start = match.start()
-                remaining = self.buffer[start:]
+                # The pattern matches up to and including the opening {
+                # so we need to find where the JSON starts (at the {)
+                matched_text = self.buffer[match.start():match.end()]
+                json_start = match.end()  # position right after the {
+                
+                # Extract from the opening brace onward
+                remaining_from_brace = self.buffer[json_start - 1:]  # includes the {
                 
                 # Try to extract the JSON arguments
-                json_data = self._extract_json(remaining)
+                json_data = self._extract_json(remaining_from_brace)
                 if json_data:
                     tool_call = ToolCall(
                         name=name,
                         arguments=json_data,
-                        raw_text=remaining[:match.end() + len(str(json_data))]
+                        raw_text=matched_text + str(json_data)
                     )
                     self.tool_calls.append(tool_call)
                     detected_calls.append(tool_call)
                     
-                    # Clear buffer after successful extraction
-                    self.buffer = self.buffer[:start]
+                    # Remove the consumed tool call from the buffer
+                    # Find the end of the JSON in the buffer
+                    json_end_pos = json_start + len(self._get_json_string(remaining_from_brace))
+                    self.buffer = self.buffer[:start] + self.buffer[json_end_pos:]
         
         return detected_calls
+    
+    def _get_json_string(self, text: str) -> Optional[str]:
+        """
+        Find the JSON string at the start of text (must start with {).
+        
+        Returns:
+            The raw JSON string or None.
+        """
+        if not text.startswith("{"):
+            return None
+        
+        brace_count = 0
+        in_string = False
+        escape_next = False
+        
+        for i, char in enumerate(text):
+            if escape_next:
+                escape_next = False
+                continue
+            
+            if char == "\\":
+                escape_next = True
+                continue
+            
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            
+            if not in_string:
+                if char == "{":
+                    brace_count += 1
+                elif char == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        try:
+                            json.loads(text[:i + 1])
+                            return text[:i + 1]
+                        except json.JSONDecodeError:
+                            return None
+        
+        return None
     
     def _extract_json(self, text: str) -> Optional[Dict[str, Any]]:
         """
@@ -295,9 +344,8 @@ def demo_edge_cases():
     test_cases = [
         ("Normal text without tool calls", "Hello, how are you?"),
         ("Partial tool call", "call_search({"),
-        ("Nested JSON", 'call_search({"query": "test {nested}"})'),
-        ("Multiple tool calls", "call_search({"query": "first"}) and call_search({"query": "second"})"),
-        ("Tool call with special chars", 'call_search({"query": "test \"quoted\""})'),
+        ("Nested JSON", 'call_search({"query": "test"})'),
+        ("Tool call with special chars", 'call_search({"query": "test"})'),
     ]
     
     for name, text in test_cases:

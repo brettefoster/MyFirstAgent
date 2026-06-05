@@ -109,8 +109,6 @@ class Sandbox:
                     "filter": filter,
                     "isinstance": isinstance,
                     "type": type,
-                    "open": open,
-                    "range": range,
                 }
             }
         

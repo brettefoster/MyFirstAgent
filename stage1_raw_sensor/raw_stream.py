@@ -46,6 +46,70 @@ def create_payload(prompt: str) -> dict:
     }
 
 
+class GeminiStream:
+    """
+    A reusable class for streaming responses from the Gemini API.
+    
+    This class wraps the raw HTTP streaming logic, making it easy to
+    integrate with other stages of the agent.
+    """
+    
+    def __init__(self, api_key: str, model: str = None):
+        """
+        Initialize the Gemini stream client.
+        
+        Args:
+            api_key: The Gemini API key.
+            model: The model to use. Defaults to the env var or a default.
+        """
+        self.api_key = api_key
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.5-flash-preview-09-2025")
+        self._stream_url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{self.model}:streamGenerateContent?key={self.api_key}"
+        )
+    
+    def stream(self, payload: dict):
+        """
+        Stream a request to the Gemini API and yield parsed JSON chunks.
+        
+        Args:
+            payload: The request payload (should contain 'contents').
+            
+        Yields:
+            Parsed JSON dictionaries from each SSE data line.
+        """
+        headers = {"Content-Type": "application/json"}
+        data = json.dumps(payload).encode("utf-8")
+        
+        try:
+            with request.Request(self._stream_url, data=data, headers=headers) as req:
+                with request.urlopen(req) as response:
+                    for line in response:
+                        decoded_line = line.decode("utf-8").strip()
+                        
+                        if not decoded_line:
+                            continue
+                        
+                        if decoded_line.startswith("data:"):
+                            json_data = decoded_line[5:].strip()
+                            
+                            if json_data in ("[DONE]", ""):
+                                continue
+                            
+                            try:
+                                yield json.loads(json_data)
+                            except json.JSONDecodeError:
+                                # Yield raw line for debugging
+                                yield {"_raw": decoded_line}
+        
+        except HTTPError as e:
+            error_body = e.read().decode("utf-8")
+            raise RuntimeError(f"HTTP Error {e.code}: {e.reason} - {error_body}") from e
+        except URLError as e:
+            raise RuntimeError(f"URL Error: {e.reason}") from e
+
+
 def stream_response(payload: dict) -> None:
     """
     Send a streaming request to the Gemini API and parse the SSE response.

@@ -10,9 +10,77 @@ Run with: python tool_registry.py
 
 import json
 import inspect
+import ast
+import operator
 from typing import Any, Dict, List, Optional, Callable, Tuple
 from dataclasses import dataclass
 from functools import wraps
+
+
+# Safe operator mapping for ast-based expression evaluation
+_SAFE_OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+}
+
+_SAFE_FUNCTIONS = {
+    "abs": abs,
+    "min": min,
+    "max": max,
+    "round": round,
+    "sum": sum,
+}
+
+
+def safe_eval(expression: str) -> Any:
+    """
+    Safely evaluate a mathematical expression using the ast module.
+    
+    Only allows basic arithmetic operations and a small set of safe functions.
+    
+    Args:
+        expression: A mathematical expression string.
+        
+    Returns:
+        The result of the evaluation.
+        
+    Raises:
+        ValueError: If the expression contains unsupported or unsafe operations.
+    """
+    node = ast.parse(expression, mode='eval').body
+
+    def _eval_node(node):
+        if isinstance(node, ast.Constant):  # Python 3.8+
+            if isinstance(node.value, (int, float)):
+                return node.value
+            raise ValueError(f"Unsupported constant type: {type(node.value)}")
+        elif isinstance(node, ast.BinOp):
+            left = _eval_node(node.left)
+            right = _eval_node(node.right)
+            op_type = type(node.op)
+            if op_type not in _SAFE_OPERATORS:
+                raise ValueError(f"Unsupported operator: {op_type.__name__}")
+            return _SAFE_OPERATORS[op_type](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = _eval_node(node.operand)
+            op_type = type(node.op)
+            if op_type not in _SAFE_OPERATORS:
+                raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+            return _SAFE_OPERATORS[op_type](operand)
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id in _SAFE_FUNCTIONS:
+                args = [_eval_node(arg) for arg in node.args]
+                return _SAFE_FUNCTIONS[node.func.id](*args)
+            raise ValueError(f"Unsupported function: {node.func.id if isinstance(node.func, ast.Name) else 'unknown'}")
+        else:
+            raise ValueError(f"Unsupported expression node: {type(node).__name__}")
+
+    return _eval_node(node)
 
 
 @dataclass
@@ -249,10 +317,9 @@ def create_sample_registry() -> ToolRegistry:
     def calculate(expression: str) -> str:
         """Perform a mathematical calculation."""
         try:
-            # Safe evaluation
-            result = eval(expression, {"__builtins__": {}}, {})
+            result = safe_eval(expression)
             return f"Result: {result}"
-        except Exception as e:
+        except (ValueError, SyntaxError, Exception) as e:
             return f"Error: {e}"
     
     @registry.register

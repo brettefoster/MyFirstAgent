@@ -15,15 +15,17 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Configuration
-API_KEY = os.getenv("GEMINI_API_KEY")
+# Configuration (deferred validation - only checked when needed)
 MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-preview-09-2025")
 
-if not API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY not found. Please set it in your .env file "
-        "or as an environment variable."
-    )
+
+def validate_api_key(api_key: str) -> None:
+    """Validate that an API key is present."""
+    if not api_key:
+        raise ValueError(
+            "GEMINI_API_KEY not found. Please set it in your .env file "
+            "or as an environment variable."
+        )
 
 
 class AgentState:
@@ -85,6 +87,35 @@ class AgentState:
                 }
             }]
         })
+
+    def add_tool_result(self, tool_call, tool_result) -> None:
+        """
+        Add a tool execution result to the history.
+        
+        Args:
+            tool_call: A ToolCall object with name and arguments.
+            tool_result: A ToolResult object with success, output, and error.
+        """
+        observation = tool_result.output if tool_result.success else f"Error: {tool_result.error}"
+        self.add_tool_observation(tool_call.name, observation)
+
+    def add_error(self, error_message: str) -> None:
+        """
+        Add an error message as a model message in the history.
+        
+        Args:
+            error_message: The formatted error message to add.
+        """
+        self.add_model_message(f"[SYSTEM ERROR] {error_message}")
+
+    def get_messages(self) -> list:
+        """
+        Get the current conversation history as a list of messages.
+        
+        Returns:
+            List of message dictionaries in Gemini API format.
+        """
+        return list(self.history)
     
     def compile_payload(self) -> dict:
         """
