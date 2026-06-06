@@ -28,7 +28,10 @@ sys.path.append('stage3_parsing_bridge')
 sys.path.append('stage4_sandboxed_hand')
 sys.path.append('stage5_reflection_loop')
 
-from raw_stream import GeminiStream
+# Import generic API client
+sys.path.append('utils')
+from api_client import APIClient, create_payload, format_tools
+
 from state_machine import AgentState
 from stream_parser import StreamParser, ToolCall
 from tool_registry import ToolRegistry, ToolResult, safe_eval
@@ -38,8 +41,9 @@ from loop_detector import LoopDetector, ExecutionStep, Backtracker, ErrorFormatt
 @dataclass
 class AgentConfig:
     """Configuration for the agent."""
-    api_key: str
-    model: str = "gemini-1.5-flash"
+    base_url: str = "http://localhost:11434"
+    model: str = "llama3"
+    api_key: str = "ollama"
     max_iterations: int = 10
     max_tokens: int = 4096
     temperature: float = 0.7
@@ -61,7 +65,7 @@ class FinalAgent:
     A complete agent that integrates all stages.
     
     This agent:
-    1. Streams responses from the Gemini API
+    1. Streams responses from an OpenAI-compatible API
     2. Manages conversation state
     3. Detects and executes tool calls
     4. Handles errors and loops gracefully
@@ -76,7 +80,11 @@ class FinalAgent:
         """
         self.config = config
         self.state = AgentState()
-        self.stream = GeminiStream(api_key=config.api_key)
+        self.client = APIClient(
+            base_url=config.base_url,
+            model=config.model,
+            api_key=config.api_key
+        )
         self.parser = StreamParser([])  # Tools will be added dynamically
         self.registry = ToolRegistry()
         self.loop_detector = LoopDetector()
@@ -141,7 +149,7 @@ class FinalAgent:
             iterations += 1
             print(f"\n[Iteration {iterations}]")
             
-            # Get tools from registry
+            # Get OpenAI-compatible tools from registry
             tools = self.registry.get_tools()
             
             # Generate response from API
@@ -158,7 +166,7 @@ class FinalAgent:
                     error="API request failed"
                 )
             
-            # Parse tool calls
+            # Parse tool calls from response text
             detected_calls = self._parse_tool_calls(response)
             
             if detected_calls:
@@ -176,10 +184,10 @@ class FinalAgent:
                         "success": result.success
                     })
                     
-                    # Add result to state
+                    # Add result to state (OpenAI-compatible tool role)
                     self.state.add_tool_result(call, result)
                     
-                    # Check for loop
+                    # Check for loops
                     step = ExecutionStep(
                         step_number=iterations,
                         action=call.name,
@@ -240,38 +248,33 @@ class FinalAgent:
             Response text or None if failed.
         """
         try:
-            # Build request
-            request = {
-                "model": self.config.model,
-                "contents": self.state.get_messages(),
-                "temperature": self.config.temperature,
-                "max_tokens": self.config.max_tokens
-            }
-            
-            if tools:
-                request["tools"] = tools
+            # Build request using OpenAI-compatible format
+            request = create_payload(
+                messages=self.state.get_messages(),
+                tools=tools if tools else None,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens,
+                model=self.config.model
+            )
             
             # Stream response
             full_response = ""
-            for chunk in self.stream.stream(request):
+            for chunk in self.client.stream(request):
                 if chunk:
-                    # Parse chunk
+                    # Parse OpenAI-style response
                     if isinstance(chunk, dict):
-                        content = chunk.get("candidates", [{}])[0].get("content", {})
-                        parts = content.get("parts", [])
-                        for part in parts:
-                            if "text" in part:
-                                text = part["text"]
-                                full_response += text
-                                # Print streaming effect
-                                print(f"  {text}", end="", flush=True)
-                            elif "functionCall" in part:
-                                # Handle function call
-                                fc = part["functionCall"]
-                                print(f"\n  [TOOL: {fc['name']}({fc['args']})]", flush=True)
-                    else:
-                        # Handle raw text
-                        full_response += str(chunk)
+                        choice = chunk.get("choices", [{}])[0]
+                        delta = choice.get("delta", {})
+                        
+                        if "content" in delta and delta["content"]:
+                            text = delta["content"]
+                            full_response += text
+                            # Print streaming effect
+                            print(f"  {text}", end="", flush=True)
+                        elif "tool_calls" in delta and delta["tool_calls"]:
+                            # Handle structured tool call from API
+                            tc = delta["tool_calls"]
+                            print(f"\n  [TOOL CALL: {tc}]", flush=True)
             
             print()  # New line after streaming
             return full_response if full_response else None
@@ -282,7 +285,9 @@ class FinalAgent:
     
     def _parse_tool_calls(self, response: str) -> List[ToolCall]:
         """
-        Parse tool calls from the response.
+        Parse tool calls from the response text.
+        
+        Uses the StreamParser to detect call_toolname({...}) patterns.
         
         Args:
             response: The model's response text.
@@ -305,15 +310,21 @@ def demo_agent():
     print("Complete Agent Integration")
     print("=" * 60 + "\n")
     
-    # Load API key
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("ERROR: GEMINI_API_KEY not set. Please set it in your environment.")
-        print("Example: export GEMINI_API_KEY='your-api-key'")
-        return
+    # Load configuration
+    base_url = os.environ.get("API_BASE", "http://localhost:11434")
+    model = os.environ.get("MODEL", "llama3")
+    api_key = os.environ.get("API_KEY", "ollama")
+    
+    print(f"Using API: {base_url}")
+    print(f"Model: {model}")
+    print()
     
     # Create agent
-    config = AgentConfig(api_key=api_key)
+    config = AgentConfig(
+        base_url=base_url,
+        model=model,
+        api_key=api_key
+    )
     agent = FinalAgent(config)
     
     # Run demo
@@ -341,14 +352,17 @@ def demo_interactive():
     print("Type 'quit' to exit")
     print("=" * 60 + "\n")
     
-    # Load API key
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        print("ERROR: GEMINI_API_KEY not set.")
-        return
+    # Load configuration
+    base_url = os.environ.get("API_BASE", "http://localhost:11434")
+    model = os.environ.get("MODEL", "llama3")
+    api_key = os.environ.get("API_KEY", "ollama")
     
     # Create agent
-    config = AgentConfig(api_key=api_key)
+    config = AgentConfig(
+        base_url=base_url,
+        model=model,
+        api_key=api_key
+    )
     agent = FinalAgent(config)
     
     while True:

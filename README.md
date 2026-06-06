@@ -6,14 +6,32 @@ A lesson plan for building an AI agent from scratch, organized into progressive 
 
 This project teaches you how to build a complete AI agent by breaking down the problem into manageable stages. Each stage focuses on a specific aspect of agent development.
 
+## API Configuration
+
+This project uses a generic OpenAI-compatible API client. You can use:
+
+- **Ollama** (local): `http://localhost:11434`
+- **vLLM** (local): `http://localhost:8000`
+- **Groq** (cloud): `https://api.groq.com/openai`
+- **Any other OpenAI-compatible endpoint**
+
+Set your configuration in `.env`:
+
+```bash
+API_BASE=http://localhost:11434
+MODEL=llama3
+API_KEY=ollama  # Often not needed for local deployments
+```
+
 ## The Stages
 
 ### Stage 1: Raw Sensor
-**Goal:** Learn to stream raw responses from the Gemini API.
+**Goal:** Learn to stream raw responses from an OpenAI-compatible API.
 
 - Understand the API structure
 - Handle streaming responses
 - Parse Server-Sent Events (SSE)
+- Work with any model/provider
 
 **Files:**
 - `stage1_raw_sensor/raw_stream.py` - Complete streaming implementation
@@ -80,7 +98,7 @@ This project teaches you how to build a complete AI agent by breaking down the p
 ### Prerequisites
 
 - Python 3.8+
-- A Gemini API key
+- An OpenAI-compatible API endpoint (local or cloud)
 
 ### Setup
 
@@ -95,9 +113,19 @@ This project teaches you how to build a complete AI agent by breaking down the p
    pip install -r requirements.txt
    ```
 
-3. Set your API key:
+3. Configure your API endpoint:
    ```bash
-   export GEMINI_API_KEY='your-api-key-here'
+   # Copy the example config
+   cp .env.example .env
+   
+   # Edit .env with your settings
+   # For Ollama (local):
+   #   API_BASE=http://localhost:11434
+   #   MODEL=llama3
+   
+   # For Groq (cloud):
+   #   API_BASE=https://api.groq.com/openai
+   #   MODEL=llama3-70b-8192
    ```
 
 4. Run a stage:
@@ -107,6 +135,9 @@ This project teaches you how to build a complete AI agent by breaking down the p
    
    # Run Stage 6 (Final Agent)
    python stage6_final_agent/agent.py
+   
+   # Interactive mode
+   python stage6_final_agent/agent.py --interactive
    ```
 
 ## Project Structure
@@ -116,6 +147,8 @@ MyFirstAgent/
 ├── README.md                 # This file
 ├── requirements.txt          # Python dependencies
 ├── .env.example            # Environment variables template
+├── utils/                  # Shared utilities
+│   └── api_client.py       # Generic OpenAI-compatible API client
 │
 ├── stage1_raw_sensor/      # Streaming from API
 │   ├── README.md
@@ -164,6 +197,16 @@ MyFirstAgent/
 - **Tool Calls:** How LLMs "act" in the world
 - **Sandboxing:** Safe code execution
 - **Reflection:** Self-correction and loop detection
+- **OpenAI-Compatible APIs:** Works with any standard API endpoint
+
+## Supported Models & Providers
+
+| Provider | Base URL | Example Models |
+|----------|----------|----------------|
+| Ollama | `http://localhost:11434` | llama3, mistral, codellama |
+| vLLM | `http://localhost:8000` | Any deployed model |
+| Groq | `https://api.groq.com/openai` | llama3-70b, mixtral-8x7b |
+| LocalAI | `http://localhost:8080` | Any compatible model |
 
 ## Contributing
 

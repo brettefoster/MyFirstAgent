@@ -30,17 +30,18 @@ TTFT: 0.8s
 ## Exercise 3: Compare SDK vs Raw
 
 **Task:** 
-1. Install the official SDK: `pip install google-genai`
-2. Write a script using the SDK to make the same request
+1. Install the OpenAI Python SDK: `pip install openai`
+2. Write a script using the SDK to make the same request to your OpenAI-compatible endpoint
 3. Compare the code complexity and output between the SDK version and raw version
 
 **Question to answer:** What abstractions does the SDK provide, and what do you lose by using it?
 
 ## Exercise 4: Explore Different Models
 
-**Task:** Modify the `MODEL` variable to try different Gemini models:
-- `gemini-2.5-flash-preview-09-2025` (fast, cheaper)
-- `gemini-pro` (slower, more capable)
+**Task:** Modify the `MODEL` variable in your `.env` file to try different models available on your API endpoint:
+- For Ollama: `llama3`, `mistral`, `codellama`
+- For Groq: `llama3-70b-8192`, `mixtral-8x7b-32768`
+- For vLLM: depends on your deployed model
 
 **Observation:** Compare the token speeds and response quality between models.
 

@@ -3,29 +3,13 @@
 Stage 2: The State Engine
 
 This module implements a state machine that manages conversation history
-and maintains the context array for the Gemini API.
+and maintains the message array for an OpenAI-compatible API.
 
 Run with: python state_machine.py
 """
 
 import json
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Configuration (deferred validation - only checked when needed)
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-preview-09-2025")
-
-
-def validate_api_key(api_key: str) -> None:
-    """Validate that an API key is present."""
-    if not api_key:
-        raise ValueError(
-            "GEMINI_API_KEY not found. Please set it in your .env file "
-            "or as an environment variable."
-        )
+from typing import List, Dict, Any
 
 
 class AgentState:
@@ -33,7 +17,7 @@ class AgentState:
     Manages the state of an agent conversation.
     
     This class maintains an append-only history of all messages and
-    compiles them into the proper format for the Gemini API.
+    compiles them into the proper format for an OpenAI-compatible API.
     """
     
     def __init__(self, system_instruction: str = "You are a helpful assistant."):
@@ -55,37 +39,34 @@ class AgentState:
         """
         self.history.append({
             "role": "user",
-            "parts": [{"text": text}]
+            "content": text
         })
     
     def add_model_message(self, text: str) -> None:
         """
-        Add a model response to the history.
+        Add an assistant (model) response to the history.
         
         Args:
             text: The model's response text.
         """
         self.history.append({
-            "role": "model",
-            "parts": [{"text": text}]
+            "role": "assistant",
+            "content": text
         })
     
-    def add_tool_observation(self, tool_name: str, observation: str) -> None:
+    def add_tool_observation(self, tool_name: str, observation: str, tool_call_id: str = "auto") -> None:
         """
-        Add a tool/function response to the history.
+        Add a tool response to the history (OpenAI-compatible format).
         
         Args:
             tool_name: The name of the tool that was executed.
             observation: The output from the tool execution.
+            tool_call_id: The ID of the tool call this response corresponds to.
         """
         self.history.append({
-            "role": "function",
-            "parts": [{
-                "functionResponse": {
-                    "name": tool_name,
-                    "response": {"output": observation}
-                }
-            }]
+            "role": "tool",
+            "tool_call_id": tool_call_id,
+            "content": observation
         })
 
     def add_tool_result(self, tool_call, tool_result) -> None:
@@ -108,29 +89,28 @@ class AgentState:
         """
         self.add_model_message(f"[SYSTEM ERROR] {error_message}")
 
-    def get_messages(self) -> list:
+    def get_messages(self) -> List[Dict[str, Any]]:
         """
         Get the current conversation history as a list of messages.
         
         Returns:
-            List of message dictionaries in Gemini API format.
+            List of message dictionaries in OpenAI-compatible API format.
         """
         return list(self.history)
     
-    def compile_payload(self) -> dict:
+    def compile_payload(self) -> Dict[str, Any]:
         """
-        Compile the current state into the payload format for the Gemini API.
+        Compile the current state into the payload format for an OpenAI-compatible API.
         
         Returns:
-            A dictionary in the format expected by the Gemini API.
+            A dictionary in the format expected by the OpenAI-compatible API.
         """
+        messages = [{"role": "system", "content": self.system_instruction}]
+        messages.extend(self.history)
         return {
-            "contents": self.history,
-            "systemInstruction": {
-                "parts": [{"text": self.system_instruction}]
-            }
+            "messages": messages
         }
-    
+
     def get_context_size(self) -> int:
         """
         Calculate the approximate size of the current context in characters.

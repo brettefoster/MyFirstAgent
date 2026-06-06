@@ -1,31 +1,32 @@
 # Stage 1: The Raw Sensor
 
-**Goal:** Strip away SDK wrappers and read the raw Server-Sent Events (SSE) streaming directly from the Gemini API.
+**Goal:** Strip away SDK wrappers and read the raw Server-Sent Events (SSE) streaming directly from an OpenAI-compatible API.
 
 ## Conceptual Grounding
 
-When you call an LLM SDK like `google-genai`, it wraps standard network requests in high-level classes. This hides the reality that the LLM communication protocol is a simple HTTP POST request that streams back individual chunks of text formatted as Server-Sent Events (SSE).
+When you call an LLM SDK like `openai` or `google-genai`, it wraps standard network requests in high-level classes. This hides the reality that the LLM communication protocol is a simple HTTP POST request that streams back individual chunks of text formatted as Server-Sent Events (SSE).
 
 In this stage, you'll write a raw HTTP client that witnesses the raw JSON packets containing the generated tokens as they land in the network buffer.
 
 ## The Streaming Endpoint
 
-```
-https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:streamGenerateContent?key=${API_KEY}
-```
+Works with any OpenAI-compatible endpoint:
 
-## Request Payload Format
+- **Ollama**: `http://localhost:11434/v1/chat/completions`
+- **vLLM**: `http://localhost:8000/v1/chat/completions`
+- **Groq**: `https://api.groq.com/openai/v1/chat/completions`
+
+## Request Payload Format (OpenAI-compatible)
 
 ```json
 {
-  "contents": [
-    {
-      "role": "user",
-      "parts": [
-        { "text": "Why is the sky blue?" }
-      ]
-    }
-  ]
+  "model": "llama3",
+  "messages": [
+    { "role": "user", "content": "Why is the sky blue?" }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 4096,
+  "stream": true
 }
 ```
 
@@ -33,13 +34,24 @@ https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview
 
 1. How HTTP streaming works at the protocol level
 2. What Server-Sent Events (SSE) look like in raw form
-3. How to parse nested JSON responses from the API
+3. How to parse OpenAI-style JSON responses from the API
 4. The difference between the SDK abstraction and the actual wire format
+5. How to work with any OpenAI-compatible model/provider
 
 ## Files
 
 - `raw_stream.py` - Complete example implementation
 - `exercises.md` - Interactive verification exercises
+
+## Configuration
+
+Set your API endpoint in `.env`:
+
+```bash
+API_BASE=http://localhost:11434
+MODEL=llama3
+API_KEY=ollama  # Often not needed for local deployments
+```
 
 ## Key Insight
 

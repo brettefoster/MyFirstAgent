@@ -196,18 +196,24 @@ class ToolRegistry:
             for tool in self._tools.values()
         ]
     
-    def get_tool_schema(self) -> Dict[str, Any]:
+    def get_openai_tools(self) -> List[Dict[str, Any]]:
         """
-        Get the complete tool schema for the API.
+        Get all registered tools in OpenAI-compatible format.
         
         Returns:
-            Tool schema in Gemini API format.
+            List of tool definitions suitable for sending to an OpenAI-compatible API.
         """
-        return {
-            "tools": [{
-                "functionDeclarations": self.get_tools()
-            }]
-        }
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters
+                }
+            }
+            for tool in self._tools.values()
+        ]
     
     def validate_call(self, tool_call: ToolCall) -> Tuple[bool, Optional[str]]:
         """
@@ -348,10 +354,10 @@ def demo_registry():
         print(f"    Parameters: {tool['parameters']['properties']}")
         print()
     
-    # Show tool schema
-    print("TOOL SCHEMA (for API):")
+    # Show OpenAI-compatible tool definitions
+    print("OPENAI-COMPATIBLE TOOL DEFINITIONS:")
     print("-" * 60)
-    print(json.dumps(registry.get_tool_schema(), indent=2))
+    print(json.dumps(registry.get_openai_tools(), indent=2))
     
     # Execute some tool calls
     print("\nEXECUTING TOOL CALLS:")

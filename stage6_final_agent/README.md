@@ -5,13 +5,31 @@
 ## Conceptual Grounding
 
 This is where all the pieces come together. You now have:
-- **Stage 1:** Raw streaming from the API
+- **Stage 1:** Raw streaming from an OpenAI-compatible API
 - **Stage 2:** Conversation state management
 - **Stage 3:** Real-time tool call parsing
 - **Stage 4:** Sandboxed tool execution
 - **Stage 5:** Reflection and loop detection
 
 Stage 6 is the orchestration layer that ties it all together.
+
+## API Configuration
+
+This agent uses a generic OpenAI-compatible API client. Configure your endpoint in `.env`:
+
+```bash
+# For local Ollama
+API_BASE=http://localhost:11434
+MODEL=llama3
+
+# For Groq (cloud)
+# API_BASE=https://api.groq.com/openai
+# MODEL=llama3-70b-8192
+
+# For vLLM
+# API_BASE=http://localhost:8000
+# MODEL=your-model-name
+```
 
 ## The Complete Agent Architecture
 

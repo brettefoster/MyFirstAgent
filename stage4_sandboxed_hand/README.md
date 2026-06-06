@@ -27,6 +27,7 @@ The LLM can't run code. Your application runs the code and feeds the text back t
 2. How to safely execute code in a sandbox
 3. How to capture stdout and errors
 4. How to format tool output for the LLM
+5. How to generate OpenAI-compatible tool definitions for function calling
 
 ## Files
 
