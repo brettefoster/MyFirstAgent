@@ -11,13 +11,9 @@ Run with: python raw_stream.py
 
 import json
 import time
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Import the generic API client
+# Import central configuration and API client
+from utils.config import config
 from utils.api_client import APIClient, create_payload
 
 
@@ -29,9 +25,9 @@ def main():
     print("=" * 60 + "\n")
     
     # Load configuration
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
     
     print(f"Configuration:")
     print(f"  Base URL: {base_url}")

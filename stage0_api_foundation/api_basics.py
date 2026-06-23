@@ -11,13 +11,9 @@ Run with: python api_basics.py
 
 import json
 import time
-import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Import the generic API client
+# Import central configuration and API client
+from utils.config import config
 from utils.api_client import APIClient, create_payload
 
 
@@ -29,16 +25,16 @@ def main():
     print("=" * 60 + "\n")
     
     # Load configuration
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
-    
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
+
     print(f"Configuration:")
     print(f"  Base URL: {base_url}")
     print(f"  Model: {model}")
     print(f"  API Key: {'*' * 5 if api_key and api_key != 'ollama' else '(not required)'}")
     print()
-    
+
     # Create the API client
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
     
@@ -131,12 +127,12 @@ def demo_system_prompt():
     print("DEMO: SYSTEM PROMPT EFFECTS")
     print("=" * 60 + "\n")
     
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
-    
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
+
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
-    
+
     user_message = "What is 2 + 2?"
     
     # Without system prompt
@@ -177,12 +173,12 @@ def demo_temperature():
     print("DEMO: TEMPERATURE EFFECTS")
     print("=" * 60 + "\n")
     
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
-    
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
+
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
-    
+
     prompt = "Give me a creative story opening."
     
     for temp in [0.1, 0.7, 1.5]:

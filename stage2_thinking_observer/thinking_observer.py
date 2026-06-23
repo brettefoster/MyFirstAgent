@@ -11,15 +11,12 @@ Run with: python thinking_observer.py
 import json
 import re
 import time
-import os
 from typing import Optional, Tuple, List
 from dataclasses import dataclass
 from enum import Enum
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
-
+# Import central configuration and API client
+from utils.config import config
 from utils.api_client import APIClient, create_payload
 
 
@@ -197,9 +194,9 @@ def demo_streaming_with_thinking():
     print("=" * 60 + "\n")
     
     # Load configuration
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
     
     print(f"Configuration:")
     print(f"  Base URL: {base_url}")

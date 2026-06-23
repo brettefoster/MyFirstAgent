@@ -108,6 +108,51 @@ class APIClient:
         except URLError as e:
             raise RuntimeError(f"URL Error: {e.reason}") from e
     
+    def request(
+        self,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Make a non-streaming request to the API and return the full response.
+
+        Args:
+            payload: The request payload (should contain 'messages').
+
+        Returns:
+            The parsed JSON response dictionary, or None on failure.
+        """
+        # Ensure stream is explicitly False for non-streaming
+        payload["model"] = payload.get("model", self.model)
+        payload["stream"] = False
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        if self.api_key and self.api_key != "ollama":
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        data = json.dumps(payload).encode("utf-8")
+
+        try:
+            req = request.Request(
+                self._stream_url,
+                data=data,
+                headers=headers,
+                method="POST"
+            )
+
+            with request.urlopen(req, timeout=120) as response:
+                return json.loads(response.read().decode("utf-8"))
+
+        except HTTPError as e:
+            error_body = e.read().decode("utf-8")
+            print(f"HTTP Error {e.code}: {e.reason} - {error_body}")
+            return None
+        except URLError as e:
+            print(f"URL Error: {e.reason}")
+            return None
+
     def chat(
         self,
         messages: List[Dict[str, str]],
@@ -201,14 +246,11 @@ def create_payload(
 
 def demo_client():
     """Demonstrate the API client."""
-    import os
-    from dotenv import load_dotenv
-    
-    load_dotenv()
-    
-    base_url = os.getenv("API_BASE", "http://localhost:11434")
-    model = os.getenv("MODEL", "llama3")
-    api_key = os.getenv("API_KEY", "ollama")
+    from utils.config import config
+
+    base_url = config.api_base
+    model = config.model
+    api_key = config.api_key
     
     print("\n" + "=" * 60)
     print("GENERIC API CLIENT DEMO")
