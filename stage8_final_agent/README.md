@@ -1,17 +1,20 @@
-# Stage 6: The Final Agent
+# Stage 8: The Final Agent
 
 **Goal:** Assemble all stages into a complete, working agent.
 
 ## Conceptual Grounding
 
 This is where all the pieces come together. You now have:
+- **Stage 0:** Basic API request/response understanding
 - **Stage 1:** Raw streaming from an OpenAI-compatible API
-- **Stage 2:** Conversation state management
-- **Stage 3:** Real-time tool call parsing
-- **Stage 4:** Sandboxed tool execution
-- **Stage 5:** Reflection and loop detection
+- **Stage 2:** Thinking pattern detection and visualization
+- **Stage 3:** Conversation state management
+- **Stage 4:** Real-time tool call parsing
+- **Stage 5:** Sandboxed tool execution
+- **Stage 6:** Reflection and loop detection
+- **Stage 7:** The Orchestrator (integration layer)
 
-Stage 6 is the orchestration layer that ties it all together.
+Stage 8 is the culmination - a complete agent that demonstrates all the patterns learned.
 
 ## API Configuration
 
@@ -42,19 +45,27 @@ MODEL=llama3
         │                     │                     │
         ▼                     ▼                     ▼
 +---------------+    +----------------+    +------------------+
-|  Stage 1      |    |  Stage 2      |    |  Stage 3         |
-|  Raw Stream   |    |  State Engine |    |  Parser          |
+|  Stage 0      |    |  Stage 1      |    |  Stage 2         |
+|  API Basics   |    |  Raw Stream   |    |  Thinking        |
 +---------------+    +----------------+    +------------------+
         │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              ▼
         +---------------------+---------------------+
+        │                     │                     │
+        ▼                     ▼                     ▼
++---------------+    +----------------+    +------------------+
+|  Stage 3      |    |  Stage 4      |    |  Stage 5         |
+|  State        |    |  Parser       |    |  Sandbox         |
++---------------+    +----------------+    +------------------+
                               │
                               ▼
         +---------------------+---------------------+
         │                     │                     │
         ▼                     ▼                     ▼
 +---------------+    +----------------+    +------------------+
-|  Stage 4      |    |  Stage 5      |    |  Stage 6         |
-|  Sandbox      |    |  Reflection   |    |  Orchestration   |
+|  Stage 6      |    |  Stage 7      |    |  Stage 8         |
+|  Reflection   |    |  Orchestrator |    |  Final Agent     |
 +---------------+    +----------------+    +------------------+
 ```
 
@@ -66,6 +77,8 @@ A complete agent that:
 3. Detects and executes tool calls
 4. Runs tools in a sandbox
 5. Handles errors and loops gracefully
+6. Observes thinking patterns
+7. Orchestrates all components
 
 ## Files
 

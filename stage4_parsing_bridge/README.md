@@ -1,6 +1,6 @@
-# Stage 3: The Parsing Bridge
+# Stage 4: The Parsing Bridge
 
-**Goal:** Build a robust, real-time parser that scans streaming chunks for specific markup patterns or JSON declarations.
+**Goal:** Build a robust, real-time parser that scans streaming text chunks for specific markup patterns or JSON declarations.
 
 ## Conceptual Grounding
 
@@ -20,11 +20,11 @@ When an LLM wants to use a tool, it doesn't "call" a function. Instead, it outpu
                                       │
                      ┌────────────────┴────────────────┐
                      ▼                                 ▼
-          [No Matching Pattern]                [Matches Pattern]
+            [No Matching Pattern]                [Matches Pattern]
                      │                                 │
                      ▼                                 ▼
-            Print to Developer Console         Halt UI Output & 
-                                               Extract Tool Parameters
+             Print to Developer Console       Halt UI Output & 
+                                              Extract Tool Parameters
 ```
 
 ## What You'll Learn
@@ -33,11 +33,21 @@ When an LLM wants to use a tool, it doesn't "call" a function. Instead, it outpu
 2. Why you can't wait for the LLM to "finish"
 3. How to use regex and JSON parsing on incomplete data
 4. The concept of "action schemas" for tool calls
+5. **NEW:** Handling structured tool call formats (OpenAI-style)
+6. **NEW:** Incremental JSON parsing for streaming
 
 ## Files
 
 - `stream_parser.py` - Complete example implementation
 - `exercises.md` - Interactive verification exercises
+
+## Parsing Strategies
+
+| Strategy | Pros | Cons |
+|----------|------|------|
+| **Regex Pattern** | Fast, flexible | Fragile, model-dependent |
+| **JSON Mode** | Reliable, structured | Requires model support |
+| **Function Calling** | Native API support | Provider-specific |
 
 ## Key Insight
 

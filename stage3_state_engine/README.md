@@ -1,4 +1,4 @@
-# Stage 2: The State Engine
+# Stage 3: The State Engine
 
 **Goal:** Build a state machine that keeps track of the conversation thread and manages "Memory."
 
@@ -35,11 +35,24 @@ An agent's state engine must explicitly track the following roles:
 2. Why context windows grow with each exchange
 3. How to structure messages for an OpenAI-compatible API
 4. The difference between "memory" and "context"
+5. **NEW:** Token counting and context window management strategies
+6. **NEW:** System prompt engineering patterns
 
 ## Files
 
 - `state_machine.py` - Complete example implementation
 - `exercises.md` - Interactive verification exercises
+
+## Context Window Management
+
+As conversations grow, you need strategies to manage context:
+
+| Strategy | Description | Trade-off |
+|----------|-------------|-----------|
+| **Full History** | Send all messages | Most accurate, highest cost |
+| **Sliding Window** | Keep last N messages | May lose important context |
+| **Summarization** | Summarize older turns | Adds complexity, may lose detail |
+| **Selective Memory** | Extract key facts | Requires additional processing |
 
 ## Key Insight
 

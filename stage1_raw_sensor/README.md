@@ -37,10 +37,12 @@ Works with any OpenAI-compatible endpoint:
 3. How to parse OpenAI-style JSON responses from the API
 4. The difference between the SDK abstraction and the actual wire format
 5. How to work with any OpenAI-compatible model/provider
+6. **NEW:** Timing metrics (TTFT, inter-token latency)
+7. **NEW:** Chunk-by-chunk visualization
 
 ## Files
 
-- `raw_stream.py` - Complete example implementation
+- `raw_stream.py` - Complete streaming implementation with timing metrics
 - `exercises.md` - Interactive verification exercises
 
 ## Configuration
@@ -50,8 +52,16 @@ Set your API endpoint in `.env`:
 ```bash
 API_BASE=http://localhost:11434
 MODEL=llama3
-API_KEY=ollama  # Often not needed for local deployments
+API_KEY=ollama  # Often not required for local deployments
 ```
+
+## Key Metrics Explained
+
+| Metric | Description | Why It Matters |
+|--------|-------------|----------------|
+| **TTFT** (Time to First Token) | Time from request to first token received | Indicates model "thinking" time |
+| **Inter-Token Latency** | Time between consecutive tokens | Shows generation speed |
+| **Tokens/Second** | Generation throughput | Performance benchmarking |
 
 ## Key Insight
 
