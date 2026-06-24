@@ -53,8 +53,6 @@ def main():
         payload = create_payload(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=512,
-            stream=False  # Important: non-streaming for Stage 0
         )
         
         print("REQUEST PAYLOAD:")
@@ -141,7 +139,6 @@ def demo_system_prompt():
     payload1 = create_payload(
         messages=[{"role": "user", "content": user_message}],
         temperature=0.7,
-        max_tokens=100
     )
     response1 = client.request(payload1)
     if response1:
@@ -157,7 +154,6 @@ def demo_system_prompt():
             {"role": "user", "content": user_message}
         ],
         temperature=0.7,
-        max_tokens=100
     )
     response2 = client.request(payload2)
     if response2:
@@ -188,7 +184,6 @@ def demo_temperature():
         payload = create_payload(
             messages=[{"role": "user", "content": prompt}],
             temperature=temp,
-            max_tokens=50
         )
         
         response = client.request(payload)

@@ -62,7 +62,6 @@ def demo_conversation_history():
     payload = create_payload(
         messages=messages,
         temperature=0.7,
-        max_tokens=200,
     )
 
     f.raw_request(payload)
@@ -76,8 +75,8 @@ def demo_conversation_history():
 
         content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        f.subheader("MODEL RESPONSE")
-        f.model_output(content, "ASSISTANT")
+        # Use centralized parsed_response for consistent formatting
+        f.parsed_response(content, "ASSISTANT")
         f.print()
 
         # Extract and show the finish reason

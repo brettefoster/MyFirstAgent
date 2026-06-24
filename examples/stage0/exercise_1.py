@@ -53,7 +53,6 @@ def main():
     payload = create_payload(
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
-        max_tokens=512,
     )
 
     # Show raw request payload
@@ -87,11 +86,8 @@ def main():
     completion_tokens = usage.get("completion_tokens", 0)
     total_tokens = usage.get("total_tokens", 0)
 
-    f.subheader("PARSED RESPONSE")
-    f.print()
-
-    # Show formatted model output
-    f.model_output(content, "ASSISTANT")
+    # Show formatted model output (centralized separator ensures consistent formatting)
+    f.parsed_response(content, "ASSISTANT")
     f.print()
 
     # Show metadata

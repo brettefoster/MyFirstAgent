@@ -58,7 +58,6 @@ def demo_different_personalities():
                 {"role": "user", "content": user_message},
             ],
             temperature=0.7,
-            max_tokens=200,
         )
 
         # Show all messages in the payload
@@ -81,7 +80,8 @@ def demo_different_personalities():
             usage = response.get("usage", {})
             total_tokens = usage.get("total_tokens", 0)
 
-            f.model_output(content, "ASSISTANT")
+            # Use centralized parsed_response for consistent formatting
+            f.parsed_response(content, "ASSISTANT")
             f.print()
             f.metadata("Finish Reason", finish_reason)
             f.metadata("Total Tokens", str(total_tokens))

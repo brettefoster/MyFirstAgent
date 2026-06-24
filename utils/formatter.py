@@ -6,6 +6,7 @@ script output, model input, model output, and raw JSON responses.
 
 import json
 import os
+import re
 from enum import Enum
 from typing import Any, Optional
 
@@ -112,31 +113,169 @@ def model_output(content: str, label: str = "ASSISTANT") -> str:
     return f"{label_part}\n{content_part}"
 
 
+def parsed_response(content: str, label: str = "ASSISTANT", width: int = 60) -> str:
+    """Format a parsed model response with a centered subheader separator.
+    
+    This ensures consistent formatting across all examples - the 'PARSED RESPONSE'
+    separator is always included.
+    """
+    header_part = subheader("PARSED RESPONSE", width)
+    label_part = _wrap(f"{label}: ", Color.BRIGHT_MAGENTA)
+    content_part = _wrap(content, Color.MAGENTA)
+    return f"{header_part}{label_part}\n{content_part}"
+
+
 def metadata(label: str, value: str) -> str:
     """Format metadata key-value pairs (cyan)."""
     return _wrap(f"  {label}: {value}", Color.CYAN)
 
 
-def raw_json(data: Any, label: str = "RAW RESPONSE") -> str:
+def _colorize_json_key(match: re.Match) -> str:
+    """
+    Colorize a JSON key (property name) in a JSON string.
+    Matches patterns like "key": or , "key":
+    Uses magenta for keys to make them stand out.
+    """
+    prefix = match.group(1)  # leading whitespace and optional comma
+    key = match.group(2)     # the key string (with quotes)
+    return f"{prefix}{_wrap(key, Color.BRIGHT_MAGENTA)}"
+
+
+def _colorize_json_string(match: re.Match) -> str:
+    """
+    Colorize a JSON string value (not keys).
+    Uses green for string values.
+    """
+    return _wrap(match.group(0), Color.GREEN)
+
+
+def _colorize_json_numbers(match: re.Match) -> str:
+    """
+    Colorize JSON numbers.
+    Uses yellow for numeric values.
+    """
+    return _wrap(match.group(0), Color.BRIGHT_YELLOW)
+
+
+def _colorize_json_bool(match: re.Match) -> str:
+    """
+    Colorize JSON booleans (true/false).
+    Uses cyan.
+    """
+    return _wrap(match.group(0), Color.CYAN)
+
+
+def _colorize_json_null(match: re.Match) -> str:
+    """
+    Colorize JSON null.
+    Uses bright black (dim).
+    """
+    return _wrap(match.group(0), Color.BRIGHT_BLACK)
+
+
+def _highlight_json(json_str: str, highlight_keys: bool = True) -> str:
+    """
+    Apply ANSI color codes to a JSON string for better readability.
+    
+    Coloring scheme:
+    - JSON keys (object property names): BRIGHT_MAGENTA (if highlight_keys is True)
+    - String values: GREEN
+    - Numbers: BRIGHT_YELLOW
+    - Booleans: CYAN
+    - null: BRIGHT_BLACK
+    
+    Args:
+        json_str: The pretty-printed JSON string to colorize.
+        highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+    
+    Returns:
+        The JSON string with ANSI color codes applied.
+    """
+    result = json_str
+    
+    if highlight_keys:
+        # Highlight JSON object keys (strings followed by colon)
+        # Pattern matches: optional whitespace + optional comma + whitespace + "key" + whitespace + :
+        result = re.sub(
+            r'((?:^|\s)(?:,\s*)?)("([^"]*?)")(\s*:\s*)',
+            lambda m: f"{m.group(1)}{_wrap(m.group(2), Color.BRIGHT_MAGENTA)}{m.group(4)}",
+            result,
+            flags=re.MULTILINE
+        )
+    
+    # Highlight JSON string values (but not keys - keys are already colored)
+    # This is tricky because we need to avoid re-coloring already-colored keys.
+    # We use a simpler approach: color string values that are NOT followed by a colon
+    # (since keys are followed by colons)
+    # Note: This is a best-effort approach and may not handle all edge cases perfectly
+    
+    # Highlight numbers (integers and floats, but not inside already-colored segments)
+    # Match numbers that are values (not part of a key)
+    result = re.sub(
+        r'(?<=:\s)(-?\d+\.?\d*(?:[eE][+-]?\d+)?)',
+        lambda m: _wrap(m.group(0), Color.BRIGHT_YELLOW),
+        result
+    )
+    
+    # Highlight booleans
+    result = re.sub(
+        r'(?<=:\s)(true|false)(?=\s*$|[\s,}\]])',
+        lambda m: _wrap(m.group(0), Color.CYAN),
+        result,
+        flags=re.MULTILINE
+    )
+    
+    # Highlight null
+    result = re.sub(
+        r'(?<=:\s)null(?=\s*$|[\s,}\]])',
+        lambda m: _wrap(m.group(0), Color.BRIGHT_BLACK),
+        result,
+        flags=re.MULTILINE
+    )
+    
+    return result
+
+
+def raw_json(data: Any, label: str = "RAW RESPONSE", highlight_keys: bool = True) -> str:
     """
     Format raw JSON data with a colored label.
-    The JSON itself is not colored (to preserve readability), but the
-    surrounding label and separators are.
+    The JSON keys and values are colorized for better readability:
+    - Keys (object property names): BRIGHT_MAGENTA
+    - String values: GREEN
+    - Numbers: BRIGHT_YELLOW
+    - Booleans: CYAN
+    - null: BRIGHT_BLACK
+    
+    Args:
+        data: The JSON-serializable data to format.
+        label: The label to display above the JSON.
+        highlight_keys: Whether to highlight JSON object keys. Defaults to True.
     """
     sep = _wrap("-" * 60, Color.DIM)
     header_line = _wrap(f"{sep}\n{label}\n{sep}", Color.BRIGHT_YELLOW)
     json_str = json.dumps(data, indent=2)
-    return f"\n{header_line}\n{json_str}\n"
+    highlighted_json = _highlight_json(json_str, highlight_keys=highlight_keys)
+    return f"\n{header_line}\n{highlighted_json}\n"
 
 
-def raw_request(payload: Any) -> str:
-    """Format a raw request payload."""
-    return raw_json(payload, label="RAW REQUEST PAYLOAD")
+def raw_request(payload: Any, highlight_keys: bool = True) -> str:
+    """Format a raw request payload.
+    
+    Args:
+        payload: The request payload to format.
+        highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+    """
+    return raw_json(payload, label="RAW REQUEST PAYLOAD", highlight_keys=highlight_keys)
 
 
-def raw_response(response: Any) -> str:
-    """Format a raw API response."""
-    return raw_json(response, label="RAW RESPONSE")
+def raw_response(response: Any, highlight_keys: bool = True) -> str:
+    """Format a raw API response.
+    
+    Args:
+        response: The response to format.
+        highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+    """
+    return raw_json(response, label="RAW RESPONSE", highlight_keys=highlight_keys)
 
 
 def error(text: str) -> str:
@@ -202,6 +341,10 @@ class Formatter:
     def model_output(self, content: str, label: str = "ASSISTANT") -> None:
         print(model_output(content, label))
 
+    def parsed_response(self, content: str, label: str = "ASSISTANT", width: int = 60) -> None:
+        """Print a parsed response with the centralized 'PARSED RESPONSE' separator."""
+        print(parsed_response(content, label, width))
+
     def metadata(self, label: str, value: str) -> None:
         print(metadata(label, value))
 
@@ -217,24 +360,38 @@ class Formatter:
     def dim(self, text: str) -> None:
         print(dim(text))
 
-    def raw_request(self, payload: Any) -> None:
-        """Print raw request. Always stored; printed if show_raw is True."""
+    def raw_request(self, payload: Any, highlight_keys: bool = True) -> None:
+        """Print raw request. Always stored; printed if show_raw is True.
+        
+        Args:
+            payload: The request payload to format.
+            highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+        """
         self._raw_requests.append(payload)
         if self.show_raw:
-            print(raw_request(payload))
+            print(raw_request(payload, highlight_keys=highlight_keys))
 
-    def raw_response(self, response: Any) -> None:
-        """Print raw response. Always stored; printed if show_raw is True."""
+    def raw_response(self, response: Any, highlight_keys: bool = True) -> None:
+        """Print raw response. Always stored; printed if show_raw is True.
+        
+        Args:
+            response: The response to format.
+            highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+        """
         self._raw_responses.append(response)
         if self.show_raw:
-            print(raw_response(response))
+            print(raw_response(response, highlight_keys=highlight_keys))
 
-    def print_all_raw(self) -> None:
-        """Print all collected raw requests and responses (if show_raw was False)."""
+    def print_all_raw(self, highlight_keys: bool = True) -> None:
+        """Print all collected raw requests and responses (if show_raw was False).
+        
+        Args:
+            highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+        """
         for req in self._raw_requests:
-            print(raw_request(req))
+            print(raw_request(req, highlight_keys=highlight_keys))
         for resp in self._raw_responses:
-            print(raw_response(resp))
+            print(raw_response(resp, highlight_keys=highlight_keys))
 
 
 # ─── Quick demo ────────────────────────────────────────────────────────

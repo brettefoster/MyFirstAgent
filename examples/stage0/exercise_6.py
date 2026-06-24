@@ -48,7 +48,6 @@ def demo_error_handling():
             messages=[{"role": "user", "content": "Hello world"}],
             model="invalid_model_name_that_does_not_exist",
             temperature=0.7,
-            max_tokens=100,
         )
 
         f.raw_request(payload)
@@ -69,9 +68,8 @@ def demo_error_handling():
 
     try:
         payload = create_payload(
-            messages=[],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=100,
         )
 
         f.raw_request(payload)
@@ -94,7 +92,6 @@ def demo_error_handling():
         payload = create_payload(
             messages=[{"role": "user", "content": "Hello world"}],
             temperature=-1.0,  # Invalid negative temperature
-            max_tokens=100,
         )
 
         f.raw_request(payload)
@@ -117,7 +114,6 @@ def demo_error_handling():
         payload = create_payload(
             messages=[{"role": "user", "content": "Hello world"}],
             temperature=3.0,  # Above typical max of 2.0
-            max_tokens=100,
         )
 
         f.raw_request(payload)

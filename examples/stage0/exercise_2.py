@@ -54,7 +54,6 @@ def demo_temperature():
         payload = create_payload(
             messages=[{"role": "user", "content": prompt}],
             temperature=temp,
-            max_tokens=100,
         )
 
         f.raw_request(payload)
@@ -69,7 +68,8 @@ def demo_temperature():
             content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
             finish_reason = response.get("choices", [{}])[0].get("finish_reason", "unknown")
 
-            f.model_output(content, "ASSISTANT")
+            # Use centralized parsed_response for consistent formatting
+            f.parsed_response(content, "ASSISTANT")
             f.print()
             f.metadata("Finish Reason", finish_reason)
             f.metadata("Response Time", f"{elapsed:.2f}s")

@@ -52,7 +52,6 @@ def demo_token_limitation():
         # Create payload with token limit
         payload = create_payload(
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens_limit,
             temperature=0.7,
         )
 
@@ -67,7 +66,8 @@ def demo_token_limitation():
 
             content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
 
-            f.model_output(content, "ASSISTANT")
+            # Use centralized parsed_response for consistent formatting
+            f.parsed_response(content, "ASSISTANT")
             f.print()
 
             # Extract and show the finish reason

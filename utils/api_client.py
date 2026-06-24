@@ -14,6 +14,9 @@ from typing import Dict, Any, List, Optional, Generator
 from urllib import request
 from urllib.error import URLError, HTTPError
 
+# Import central configuration for default values
+from utils.config import config
+
 
 class APIClient:
     """
@@ -158,7 +161,7 @@ class APIClient:
         messages: List[Dict[str, str]],
         tools: Optional[List[Dict[str, Any]]] = None,
         temperature: float = 0.7,
-        max_tokens: int = 4096
+        max_tokens: Optional[int] = None
     ) -> Generator[Dict[str, Any], None, None]:
         """
         Stream a chat completion request.
@@ -167,11 +170,14 @@ class APIClient:
             messages: List of message dictionaries with 'role' and 'content'.
             tools: Optional list of tool/function definitions.
             temperature: Sampling temperature.
-            max_tokens: Maximum tokens to generate.
+            max_tokens: Maximum tokens to generate (defaults to config.max_tokens).
             
         Yields:
             Parsed JSON chunks from the stream.
         """
+        if max_tokens is None:
+            max_tokens = config.max_tokens
+
         payload = {
             "messages": messages,
             "temperature": temperature,
@@ -212,7 +218,7 @@ def create_payload(
     messages: List[Dict[str, str]],
     tools: Optional[List[Dict[str, Any]]] = None,
     temperature: float = 0.7,
-    max_tokens: int = 4096,
+    max_tokens: Optional[int] = None,
     model: Optional[str] = None
 ) -> Dict[str, Any]:
     """
@@ -222,12 +228,15 @@ def create_payload(
         messages: List of message dictionaries.
         tools: Optional list of tool definitions.
         temperature: Sampling temperature.
-        max_tokens: Maximum tokens to generate.
+        max_tokens: Maximum tokens to generate (defaults to config.max_tokens).
         model: Model name (overrides default).
         
     Returns:
         Request payload dictionary.
     """
+    if max_tokens is None:
+        max_tokens = config.max_tokens
+
     payload = {
         "messages": messages,
         "temperature": temperature,

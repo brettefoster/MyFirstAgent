@@ -43,7 +43,6 @@ class AgentConfig:
     model: str = "llama3"
     api_key: str = "ollama"
     max_iterations: int = 10
-    max_tokens: int = 4096
     temperature: float = 0.7
     enable_thinking_observation: bool = True
     enable_loop_detection: bool = True
@@ -263,7 +262,6 @@ class Orchestrator:
                 messages=self.state.get_messages(),
                 tools=tools if tools else None,
                 temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
                 model=self.config.model
             )
             

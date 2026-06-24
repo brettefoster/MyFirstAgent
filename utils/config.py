@@ -38,14 +38,18 @@ class Config:
         self.api_base: str = os.getenv("API_BASE", "http://localhost:8080").rstrip("/")
         self.model: str = os.getenv("MODEL", "llama3")
         self.api_key: str = os.getenv("API_KEY", "ollama")
+        self.context_window_size: int = int(os.getenv("CONTEXT_WINDOW_SIZE", "64000"))
+        self.max_tokens: int = int(os.getenv("MAX_TOKENS", "4096"))
 
     def summary(self) -> str:
         """Return a human-readable summary of the configuration."""
         key_display = "*" * 5 if self.api_key and self.api_key != "ollama" else "(not required)"
         return (
-            f"  API Base: {self.api_base}\n"
-            f"  Model:    {self.model}\n"
-            f"  API Key:  {key_display}"
+            f"  API Base:            {self.api_base}\n"
+            f"  Model:                 {self.model}\n"
+            f"  API Key:               {key_display}\n"
+            f"  Context Window Size:   {self.context_window_size}\n"
+            f"  Max Tokens:            {self.max_tokens}"
         )
 
 
