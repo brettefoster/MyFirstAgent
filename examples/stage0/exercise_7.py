@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # Import central configuration and API client
 from utils.config import config
 from utils.api_client import APIClient, create_payload
+from utils.formatter import Formatter
 
 
 def calculate_cost(prompt_tokens: int, completion_tokens: int) -> tuple:
@@ -45,31 +46,30 @@ def calculate_cost(prompt_tokens: int, completion_tokens: int) -> tuple:
 
 def demo_token_cost_calculation():
     """Demonstrate token cost calculation."""
-    print("\n" + "=" * 60)
-    print("STAGE 0 EXERCISE 7: TOKEN COST CALCULATION")
-    print("Understanding API Usage Costs")
-    print("=" * 60 + "\n")
+    f = Formatter(show_raw=True)
+
+    f.header("STAGE 0 EXERCISE 7: TOKEN COST CALCULATION")
+    f.script("Understanding API Usage Costs")
+    f.print()
 
     # Load configuration
     base_url = config.api_base
     model = config.model
     api_key = config.api_key
 
-    print(f"Configuration:")
-    print(f"  Base URL: {base_url}")
-    print(f"  Model: {model}")
-    print()
+    f.config(f"  Base URL: {base_url}")
+    f.config(f"  Model: {model}")
+    f.print()
 
     # Create the API client
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
 
     # Example 1: Single API Call
-    print("=" * 60)
-    print("Example 1: Single API Call")
-    print("=" * 60)
+    f.subheader("Example 1: Single API Call")
 
     prompt = "Explain what machine learning is in simple terms."
-    print(f"Prompt: {prompt}\n")
+    f.model_input("PROMPT", prompt)
+    f.print()
 
     payload = create_payload(
         messages=[{"role": "user", "content": prompt}],
@@ -77,8 +77,12 @@ def demo_token_cost_calculation():
         max_tokens=200,
     )
 
+    f.raw_request(payload)
+
     response = client.request(payload)
     if response:
+        f.raw_response(response)
+
         # Extract usage information
         usage = response.get("usage", {})
         prompt_tokens = usage.get("prompt_tokens", 0)
@@ -90,20 +94,23 @@ def demo_token_cost_calculation():
             prompt_tokens, completion_tokens
         )
 
-        print(f"Prompt Tokens: {prompt_tokens}")
-        print(f"Completion Tokens: {completion_tokens}")
-        print(f"Total Tokens: {total_tokens}")
-        print(f"\nCost Breakdown:")
-        print(f"  Prompt Cost:      ${prompt_cost:.8f}")
-        print(f"  Completion Cost:  ${completion_cost:.8f}")
-        print(f"  Total Cost:       ${total_cost:.8f}")
+        f.subheader("TOKEN USAGE")
+        f.metadata("Prompt Tokens", str(prompt_tokens))
+        f.metadata("Completion Tokens", str(completion_tokens))
+        f.metadata("Total Tokens", str(total_tokens))
+        f.print()
+
+        f.subheader("COST BREAKDOWN")
+        f.script(f"  Prompt Cost:      ${prompt_cost:.8f}")
+        f.script(f"  Completion Cost:  ${completion_cost:.8f}")
+        f.script(f"  Total Cost:       ${total_cost:.8f}")
     else:
-        print("Failed to get response")
+        f.error("Failed to get response")
+
+    f.print()
 
     # Example 2: Simulated 100-turn Conversation
-    print(f"\n{'=' * 60}")
-    print("Example 2: Simulated 100-turn Conversation")
-    print(f"{'=' * 60}")
+    f.subheader("Example 2: Simulated 100-turn Conversation")
 
     turns = 100
     avg_prompt_tokens = 500
@@ -116,41 +123,44 @@ def demo_token_cost_calculation():
         total_prompt_tokens, total_completion_tokens
     )
 
-    print(f"Number of turns:                {turns}")
-    print(f"Average prompt tokens per turn: {avg_prompt_tokens}")
-    print(f"Average completion tokens per turn: {avg_completion_tokens}")
-    print(f"\nTotal prompt tokens:      {total_prompt_tokens:,}")
-    print(f"Total completion tokens:  {total_completion_tokens:,}")
-    print(f"\nCost Breakdown:")
-    print(f"  Prompt Cost:      ${prompt_cost:.4f}")
-    print(f"  Completion Cost:  ${completion_cost:.4f}")
-    print(f"  Total Cost:       ${total_cost:.4f}")
+    f.script(f"  Number of turns:                {turns}")
+    f.script(f"  Average prompt tokens per turn: {avg_prompt_tokens}")
+    f.script(f"  Average completion tokens per turn: {avg_completion_tokens}")
+    f.print()
+    f.script(f"  Total prompt tokens:      {total_prompt_tokens:,}")
+    f.script(f"  Total completion tokens:  {total_completion_tokens:,}")
+    f.print()
+    f.subheader("COST BREAKDOWN")
+    f.script(f"  Prompt Cost:      ${prompt_cost:.4f}")
+    f.script(f"  Completion Cost:  ${completion_cost:.4f}")
+    f.script(f"  Total Cost:       ${total_cost:.4f}")
+
+    f.print()
 
     # Example 3: Cost comparison table
-    print(f"\n{'=' * 60}")
-    print("Example 3: Cost Comparison for Different Conversation Lengths")
-    print(f"{'=' * 60}\n")
+    f.subheader("Example 3: Cost Comparison for Different Conversation Lengths")
+    f.print()
 
-    print(f"{'Turns':<10} {'Total Tokens':<18} {'Estimated Cost':<15}")
-    print("-" * 45)
+    f.script(f"  {'Turns':<10} {'Total Tokens':<18} {'Estimated Cost':<15}")
+    f.dim("  " + "-" * 43)
 
     for turns in [10, 50, 100, 500, 1000]:
         t_prompt = turns * avg_prompt_tokens
         t_completion = turns * avg_completion_tokens
         _, _, cost = calculate_cost(t_prompt, t_completion)
         total_toks = t_prompt + t_completion
-        print(f"{turns:<10} {total_toks:<18,} ${cost:<14.4f}")
+        f.script(f"  {turns:<10} {total_toks:<18,} ${cost:<14.4f}")
+
+    f.print()
 
     # Summary
-    print(f"\n{'=' * 60}")
-    print("SUMMARY:")
-    print(f"{'=' * 60}")
-    print("  Token costs add up quickly with long conversations.")
-    print("  Tips to reduce costs:")
-    print("  - Set reasonable max_tokens limits")
-    print("  - Keep prompts concise")
-    print("  - Trim conversation history when it gets too long")
-    print("  - Use smaller models for simple tasks")
+    f.subheader("SUMMARY")
+    f.script("  Token costs add up quickly with long conversations.")
+    f.script("  Tips to reduce costs:")
+    f.script("  - Set reasonable max_tokens limits")
+    f.script("  - Keep prompts concise")
+    f.script("  - Trim conversation history when it gets too long")
+    f.script("  - Use smaller models for simple tasks")
 
 
 if __name__ == "__main__":

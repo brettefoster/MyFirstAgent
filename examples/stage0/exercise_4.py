@@ -16,24 +16,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # Import central configuration and API client
 from utils.config import config
 from utils.api_client import APIClient, create_payload
+from utils.formatter import Formatter
 
 
 def demo_conversation_history():
     """Demonstrate multi-turn conversation with history."""
-    print("\n" + "=" * 60)
-    print("STAGE 0 EXERCISE 4: MULTI-TURN CONVERSATION")
-    print("Maintaining Context Across Messages")
-    print("=" * 60 + "\n")
+    f = Formatter(show_raw=True)
+
+    f.header("STAGE 0 EXERCISE 4: MULTI-TURN CONVERSATION")
+    f.script("Maintaining Context Across Messages")
+    f.print()
 
     # Load configuration
     base_url = config.api_base
     model = config.model
     api_key = config.api_key
 
-    print(f"Configuration:")
-    print(f"  Base URL: {base_url}")
-    print(f"  Model: {model}")
-    print()
+    f.config(f"  Base URL: {base_url}")
+    f.config(f"  Model: {model}")
+    f.print()
 
     # Create the API client
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
@@ -45,11 +46,17 @@ def demo_conversation_history():
         {"role": "user", "content": "What is my name?"},
     ]
 
-    print("Conversation History:")
+    f.script("Conversation History:")
     for msg in messages:
-        print(f"  {msg['role']}: {msg['content']}")
+        role_label = msg["role"].upper()
+        if role_label == "USER" or role_label == "SYSTEM":
+            f.model_input(role_label, msg["content"])
+        else:
+            f.model_output(msg["content"], role_label)
+    f.print()
 
-    print("\nMaking API call with conversation history...")
+    f.script("Making API call with conversation history...")
+    f.print()
 
     # Create payload with conversation history
     payload = create_payload(
@@ -58,18 +65,24 @@ def demo_conversation_history():
         max_tokens=200,
     )
 
+    f.raw_request(payload)
+
     start_time = time.time()
     response = client.request(payload)
     elapsed = time.time() - start_time
 
     if response:
+        f.raw_response(response)
+
         content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
-        print(f"\nResponse: {content}")
+
+        f.subheader("MODEL RESPONSE")
+        f.model_output(content, "ASSISTANT")
+        f.print()
 
         # Extract and show the finish reason
         choice = response.get("choices", [{}])[0]
         finish_reason = choice.get("finish_reason", "unknown")
-        print(f"\nFinish Reason: {finish_reason}")
 
         # Show usage information
         usage = response.get("usage", {})
@@ -77,22 +90,22 @@ def demo_conversation_history():
         completion_tokens = usage.get("completion_tokens", 0)
         total_tokens = usage.get("total_tokens", 0)
 
-        print(f"\nUsage Information:")
-        print(f"  Prompt Tokens: {prompt_tokens}")
-        print(f"  Completion Tokens: {completion_tokens}")
-        print(f"  Total Tokens: {total_tokens}")
-        print(f"  Response Time: {elapsed:.2f}s")
+        f.subheader("USAGE INFORMATION")
+        f.metadata("Finish Reason", finish_reason)
+        f.metadata("Prompt Tokens", str(prompt_tokens))
+        f.metadata("Completion Tokens", str(completion_tokens))
+        f.metadata("Total Tokens", str(total_tokens))
+        f.metadata("Response Time", f"{elapsed:.2f}s")
+        f.print()
 
         # Answer the exercise question
-        print(f"\n{'=' * 60}")
-        print("EXERCISE ANSWER:")
-        print(f"{'=' * 60}")
-        print("  Does the model remember the name?")
-        print("  Yes! By including the full conversation history in the")
-        print("  messages array, the model has context about previous")
-        print("  exchanges and can reference earlier information.")
+        f.subheader("EXERCISE ANSWER")
+        f.script("  Does the model remember the name?")
+        f.script("  Yes! By including the full conversation history in the")
+        f.script("  messages array, the model has context about previous")
+        f.script("  exchanges and can reference earlier information.")
     else:
-        print("Failed to get response")
+        f.error("Failed to get response")
 
 
 if __name__ == "__main__":

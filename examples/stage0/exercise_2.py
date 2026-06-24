@@ -17,24 +17,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # Import central configuration and API client
 from utils.config import config
 from utils.api_client import APIClient, create_payload
+from utils.formatter import Formatter
 
 
 def demo_temperature():
     """Show how different temperature values affect responses."""
-    print("\n" + "=" * 60)
-    print("STAGE 0 EXERCISE 2: EXPERIMENT WITH TEMPERATURE")
-    print("Understanding How Temperature Affects Responses")
-    print("=" * 60 + "\n")
+    f = Formatter(show_raw=True)
+
+    f.header("STAGE 0 EXERCISE 2: EXPERIMENT WITH TEMPERATURE")
+    f.script("Understanding How Temperature Affects Responses")
+    f.print()
 
     # Load configuration
     base_url = config.api_base
     model = config.model
     api_key = config.api_key
 
-    print(f"Configuration:")
-    print(f"  Base URL: {base_url}")
-    print(f"  Model: {model}")
-    print()
+    f.config(f"  Base URL: {base_url}")
+    f.config(f"  Model: {model}")
+    f.print()
 
     # Create the API client
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
@@ -46,10 +47,9 @@ def demo_temperature():
     temperatures = [0.0, 0.5, 0.7, 1.0, 1.5, 2.0]
 
     for temp in temperatures:
-        print(f"\n{'=' * 60}")
-        print(f"Temperature: {temp}")
-        print(f"{'=' * 60}")
-        print(f"Prompt: {prompt}\n")
+        f.subheader(f"Temperature: {temp}")
+        f.model_input("PROMPT", prompt)
+        f.print()
 
         payload = create_payload(
             messages=[{"role": "user", "content": prompt}],
@@ -57,30 +57,35 @@ def demo_temperature():
             max_tokens=100,
         )
 
+        f.raw_request(payload)
+
         start_time = time.time()
         response = client.request(payload)
         elapsed = time.time() - start_time
 
         if response:
+            f.raw_response(response)
+
             content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
             finish_reason = response.get("choices", [{}])[0].get("finish_reason", "unknown")
 
-            print(f"Response: {content}")
-            print(f"Finish Reason: {finish_reason}")
-            print(f"Response Time: {elapsed:.2f}s")
+            f.model_output(content, "ASSISTANT")
+            f.print()
+            f.metadata("Finish Reason", finish_reason)
+            f.metadata("Response Time", f"{elapsed:.2f}s")
         else:
-            print("Failed to get response")
+            f.error("Failed to get response")
+
+        f.print()
 
     # Summary
-    print(f"\n{'=' * 60}")
-    print("TEMPERATURE SUMMARY:")
-    print(f"{'=' * 60}")
-    print("  0.0  - Completely deterministic. Same output every time.")
-    print("  0.5  - Low randomness. Mostly consistent with slight variation.")
-    print("  0.7  - Moderate randomness. Good balance of creativity and focus.")
-    print("  1.0  - High randomness. More creative and varied responses.")
-    print("  1.5  - Very high randomness. Unusual and creative outputs.")
-    print("  2.0  - Maximum randomness. Highly creative but may be incoherent.")
+    f.subheader("TEMPERATURE SUMMARY")
+    f.script("  0.0  - Completely deterministic. Same output every time.")
+    f.script("  0.5  - Low randomness. Mostly consistent with slight variation.")
+    f.script("  0.7  - Moderate randomness. Good balance of creativity and focus.")
+    f.script("  1.0  - High randomness. More creative and varied responses.")
+    f.script("  1.5  - Very high randomness. Unusual and creative outputs.")
+    f.script("  2.0  - Maximum randomness. Highly creative but may be incoherent.")
 
 
 if __name__ == "__main__":

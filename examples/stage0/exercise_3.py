@@ -17,24 +17,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 # Import central configuration and API client
 from utils.config import config
 from utils.api_client import APIClient, create_payload
+from utils.formatter import Formatter
 
 
 def demo_different_personalities():
     """Show how system prompts affect responses."""
-    print("\n" + "=" * 60)
-    print("STAGE 0 EXERCISE 3: SYSTEM PROMPT POWER")
-    print("How System Prompts Change Response Style")
-    print("=" * 60 + "\n")
+    f = Formatter(show_raw=True)
+
+    f.header("STAGE 0 EXERCISE 3: SYSTEM PROMPT POWER")
+    f.script("How System Prompts Change Response Style")
+    f.print()
 
     # Load configuration
     base_url = config.api_base
     model = config.model
     api_key = config.api_key
 
-    print(f"Configuration:")
-    print(f"  Base URL: {base_url}")
-    print(f"  Model: {model}")
-    print()
+    f.config(f"  Base URL: {base_url}")
+    f.config(f"  Model: {model}")
+    f.print()
 
     # Create the API client
     client = APIClient(base_url=base_url, model=model, api_key=api_key)
@@ -49,9 +50,7 @@ def demo_different_personalities():
     ]
 
     for i, system_prompt in enumerate(system_prompts, 1):
-        print(f"\n{'=' * 60}")
-        print(f"System Prompt {i}: '{system_prompt}'")
-        print(f"{'=' * 60}")
+        f.subheader(f"System Prompt {i}: '{system_prompt}'")
 
         payload = create_payload(
             messages=[
@@ -62,30 +61,41 @@ def demo_different_personalities():
             max_tokens=200,
         )
 
+        # Show all messages in the payload
+        f.model_input("SYSTEM", system_prompt)
+        f.print()
+        f.model_input("USER", user_message)
+        f.print()
+
+        f.raw_request(payload)
+
         start_time = time.time()
         response = client.request(payload)
         elapsed = time.time() - start_time
 
         if response:
+            f.raw_response(response)
+
             content = response.get("choices", [{}])[0].get("message", {}).get("content", "")
             finish_reason = response.get("choices", [{}])[0].get("finish_reason", "unknown")
             usage = response.get("usage", {})
             total_tokens = usage.get("total_tokens", 0)
 
-            print(f"Response:\n{content}")
-            print(f"\nFinish Reason: {finish_reason}")
-            print(f"Total Tokens: {total_tokens}")
-            print(f"Response Time: {elapsed:.2f}s")
+            f.model_output(content, "ASSISTANT")
+            f.print()
+            f.metadata("Finish Reason", finish_reason)
+            f.metadata("Total Tokens", str(total_tokens))
+            f.metadata("Response Time", f"{elapsed:.2f}s")
         else:
-            print("Failed to get response")
+            f.error("Failed to get response")
+
+        f.print()
 
     # Summary
-    print(f"\n{'=' * 60}")
-    print("SUMMARY:")
-    print(f"{'=' * 60}")
-    print("  The system prompt dramatically changes the response style,")
-    print("  tone, and personality of the model's output. This is one")
-    print("  of the most powerful tools for controlling model behavior.")
+    f.subheader("SUMMARY")
+    f.script("  The system prompt dramatically changes the response style,")
+    f.script("  tone, and personality of the model's output. This is one")
+    f.script("  of the most powerful tools for controlling model behavior.")
 
 
 if __name__ == "__main__":
