@@ -19,6 +19,14 @@ from enum import Enum
 from utils.config import config
 from utils.api_client import APIClient, create_payload
 
+@dataclass
+class ThinkingMetrics:
+    """Metrics for tracking thinking vs answer behavior."""
+    thinking_duration: float = 0.0  # Time spent in thinking mode
+    answer_duration: float = 0.0    # Time spent in answer mode
+    thinking_token_count: int = 0
+    answer_token_count: int = 0
+
 
 class OutputMode(Enum):
     """Types of output in the stream."""
@@ -33,6 +41,26 @@ class StreamSegment:
     text: str
     mode: OutputMode
     timestamp: float
+
+
+class UserFacingAgent:
+    """Wrapper that shows only answers to users but logs thinking for debugging."""
+    
+    def __init__(self):
+        """Initialize the user-facing agent."""
+        self.observer = ThinkingObserver()
+    
+    def stream_to_user(self, chunk):
+        """Only show answer to user."""
+        segments = self.observer.feed_chunk(chunk)
+        for seg in segments:
+            if seg.mode == OutputMode.ANSWER:
+                print(seg.text, end="", flush=True)
+            # Thinking is silently logged
+    
+    def get_debug_log(self):
+        """Return full thinking process for debugging."""
+        return self.observer.get_thinking_content()
 
 
 class ThinkingObserver:
@@ -56,6 +84,9 @@ class ThinkingObserver:
         r"let me break this down",
         r"analysis:",
         r"reasoning:",
+        r"#思考",  # Chinese "think"
+        r"Let me analyze",
+        r"My reasoning is",
     ]
     
     THINKING_END_PATTERNS = [
@@ -80,6 +111,8 @@ class ThinkingObserver:
         self.current_mode = OutputMode.UNKNOWN
         self.segments: List[StreamSegment] = []
         self.in_thinking_block = False
+        self.metrics = ThinkingMetrics()
+        self.last_mode_change = time.time()
         
         # Compile patterns for efficiency
         self.thinking_start_re = re.compile(
@@ -294,6 +327,85 @@ def demo_simulated_thinking():
     print(f"\nANSWER:\n{observer.get_answer_content()}")
 
 
+def demo_visualization():
+    """Show thinking in a box, answer normally."""
+    print("\n" + "=" * 60)
+    print("THINKING VISUALIZATION DEMO")
+    print("=" * 60 + "\n")
+    
+    observer = ThinkingObserver()
+    
+    # Simulated stream
+    chunks = [
+        "<thinking>\nAnalyzing the problem...\n</thinking>\n\n",
+        "The answer is 42."
+    ]
+    
+    print("Input chunks:")
+    for chunk in chunks:
+        print(f"  {repr(chunk)}")
+    
+    print("\nOutput with visualization:")
+    for chunk in chunks:
+        segments = observer.feed_chunk(chunk)
+        for seg in segments:
+            if seg.mode == OutputMode.THINKING:
+                print(f"[THINKING]: {seg.text}")
+            else:
+                print(f"[ANSWER]: {seg.text}")
+
+
+def demo_prompt_engineering():
+    """Demonstrate prompt engineering for thinking behavior."""
+    print("\n" + "=" * 60)
+    print("PROMPT ENGINEERING FOR THINKING")
+    print("=" * 60 + "\n")
+    
+    prompts = [
+        "What is 2+2?",  # Simple, no thinking
+        "Think step by step: What is 2+2?",  # Encourages thinking
+        "Show your work: Calculate 15 * 24",  # Explicit reasoning request
+    ]
+    
+    print("Testing different prompts:")
+    for i, prompt in enumerate(prompts):
+        print(f"\nPrompt {i+1}: {prompt}")
+        
+        # Create a simple observer to demonstrate
+        observer = ThinkingObserver()
+        
+        # Simulate responses for each prompt
+        if "2+2" in prompt:
+            # Simple response
+            response_chunks = [
+                "Let me calculate this step by step.\n\n",
+                "First, I need to add 2 + 2.\n\n",
+                "This equals 4.\n\n",
+                "The answer is 4."
+            ]
+        elif "15 * 24" in prompt:
+            # More complex response
+            response_chunks = [
+                "To calculate 15 * 24, I'll break it down.\n\n",
+                "First, let me think about this multiplication.\n\n",
+                "I can calculate it as: 15 * 20 + 15 * 4\n\n",
+                "That's: 300 + 60 = 360.\n\n",
+                "So the answer is 360."
+            ]
+        else:
+            # Simple response
+            response_chunks = [
+                "The answer is 4."
+            ]
+        
+        print("Simulated response:")
+        for chunk in response_chunks:
+            segments = observer.feed_chunk(chunk)
+            for seg in segments:
+                mode_str = "THINKING" if seg.mode == OutputMode.THINKING else "ANSWER"
+                print(f"  [{mode_str}] {repr(chunk)}")
+
+
 def demo_chain_of_thought():
     """Demonstrate chain-of-thought detection."""
     print("\n" + "=" * 60)
@@ -329,6 +441,8 @@ def main():
     """Main entry point."""
     demo_simulated_thinking()
     demo_chain_of_thought()
+    demo_visualization()
+    demo_prompt_engineering()
     
     # Uncomment to test with real API:
     # demo_streaming_with_thinking()

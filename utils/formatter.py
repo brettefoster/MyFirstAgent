@@ -67,10 +67,16 @@ def set_colors_enabled(enabled: bool) -> None:
     _COLORS_ENABLED = enabled
 
 
-def _wrap(text: str, color: Color) -> str:
-    """Wrap text with a color code, respecting the colors enabled setting."""
+def _wrap(text: str, *colors: Color) -> str:
+    """Wrap text with one or more ANSI color codes, respecting the colors enabled setting.
+    
+    Args:
+        text: The text to wrap.
+        *colors: One or more Color enums to apply (applied in order).
+    """
     if _COLORS_ENABLED:
-        return f"{color.value}{text}{Color.RESET.value}"
+        prefix = "".join(c.value for c in colors)
+        return f"{prefix}{text}{Color.RESET.value}"
     return text
 
 
@@ -173,7 +179,7 @@ def _colorize_json_null(match: re.Match) -> str:
     return _wrap(match.group(0), Color.BRIGHT_BLACK)
 
 
-def _highlight_json(json_str: str, highlight_keys: bool = True) -> str:
+def _highlight_json(json_str: str, highlight_keys: bool = True, highlight_reasoning: bool = True) -> str:
     """
     Apply ANSI color codes to a JSON string for better readability.
     
@@ -183,10 +189,12 @@ def _highlight_json(json_str: str, highlight_keys: bool = True) -> str:
     - Numbers: BRIGHT_YELLOW
     - Booleans: CYAN
     - null: BRIGHT_BLACK
+    - Reasoning delimiters: colored inline inside string values when detected
     
     Args:
         json_str: The pretty-printed JSON string to colorize.
         highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+        highlight_reasoning: Whether to highlight reasoning delimiters in JSON string values. Defaults to True.
     
     Returns:
         The JSON string with ANSI color codes applied.
@@ -233,10 +241,13 @@ def _highlight_json(json_str: str, highlight_keys: bool = True) -> str:
         flags=re.MULTILINE
     )
     
+    if highlight_reasoning:
+        result = _highlight_reasoning(result)
+
     return result
 
 
-def raw_json(data: Any, label: str = "RAW RESPONSE", highlight_keys: bool = True) -> str:
+def raw_json(data: Any, label: str = "RAW RESPONSE", highlight_keys: bool = True, highlight_reasoning: bool = True) -> str:
     """
     Format raw JSON data with a colored label.
     The JSON keys and values are colorized for better readability:
@@ -254,11 +265,15 @@ def raw_json(data: Any, label: str = "RAW RESPONSE", highlight_keys: bool = True
     sep = _wrap("-" * 60, Color.DIM)
     header_line = _wrap(f"{sep}\n{label}\n{sep}", Color.BRIGHT_YELLOW)
     json_str = json.dumps(data, indent=2)
-    highlighted_json = _highlight_json(json_str, highlight_keys=highlight_keys)
+    highlighted_json = _highlight_json(
+        json_str,
+        highlight_keys=highlight_keys,
+        highlight_reasoning=highlight_reasoning,
+    )
     return f"\n{header_line}\n{highlighted_json}\n"
 
 
-def raw_request(payload: Any, highlight_keys: bool = True) -> str:
+def raw_request(payload: Any, highlight_keys: bool = True, highlight_reasoning: bool = True) -> str:
     """Format a raw request payload.
     
     Args:
@@ -268,14 +283,20 @@ def raw_request(payload: Any, highlight_keys: bool = True) -> str:
     return raw_json(payload, label="RAW REQUEST PAYLOAD", highlight_keys=highlight_keys)
 
 
-def raw_response(response: Any, highlight_keys: bool = True) -> str:
+def raw_response(response: Any, highlight_keys: bool = True, highlight_reasoning: bool = True) -> str:
     """Format a raw API response.
     
     Args:
         response: The response to format.
         highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+        highlight_reasoning: Whether to highlight reasoning delimiters in JSON string values. Defaults to True.
     """
-    return raw_json(response, label="RAW RESPONSE", highlight_keys=highlight_keys)
+    return raw_json(
+        response,
+        label="RAW RESPONSE",
+        highlight_keys=highlight_keys,
+        highlight_reasoning=highlight_reasoning,
+    )
 
 
 def error(text: str) -> str:
@@ -296,6 +317,71 @@ def success(text: str) -> str:
 def dim(text: str) -> str:
     """Format dimmed text for secondary info."""
     return _wrap(text, Color.DIM)
+
+
+# ─── Reasoning/Thinking Process Highlighting ───────────────────────────
+
+# Regex patterns for reasoning content highlighting.
+# Each entry is a (compiled_regex_pattern, [color_list]) tuple.
+# Color legend:
+#   BOLD + BRIGHT_WHITE + BG_BLUE  →  "Thinking Process:" header (blue background, white bold text)
+#   BRIGHT_CYAN + BOLD             →  Numbered section headers like "1. **Deconstruct the request:**"
+#   BRIGHT_BLACK + BG_YELLOW + BOLD →  Attempt markers like "*Attempt 1:*" (yellow background, bold)
+#   BRIGHT_MAGENTA + BOLD          →  Option markers like "*Option A:*" (magenta, bold)
+#   BRIGHT_RED + DIM               →  Self-correction markers like "-> Fail." (red, dimmed)
+_REASONING_PATTERNS = [
+    (re.compile(r'(Thinking Process:)', re.MULTILINE), [Color.BOLD, Color.BRIGHT_WHITE, Color.BG_BLUE]),
+    (re.compile(r'(\d+\.\s*\*\*.*:\*\*)', re.MULTILINE), [Color.BRIGHT_CYAN, Color.BOLD]),
+    (re.compile(r'(\*?\s*\*?Attempt\s+\d+[^:\n]*:\*?)'), [Color.BRIGHT_BLACK, Color.BG_YELLOW, Color.BOLD]),
+    (re.compile(r'(\*?\s*\*?Option\s+[A-Z]\s*[:\*]\*?)'), [Color.BRIGHT_MAGENTA, Color.BOLD]),
+    (re.compile(r'(->\s+\S+[\s\.:]*)'), [Color.BRIGHT_RED]),
+    (re.compile(r'(Result:)', re.MULTILINE), [Color.BRIGHT_WHITE, Color.BG_BLUE]),
+]
+
+
+def _highlight_reasoning(text: str) -> str:
+    """
+    Apply inline ANSI color codes to reasoning/thinking process text via multi-pass
+    pattern matching. Each pattern is paired with its color list; passes run sequentially,
+    each updating the result string.
+    
+    Coloring scheme:
+    - "Thinking Process:" header: BOLD + BRIGHT_WHITE + BG_BLUE
+    - Section headers (N. **Title**): BRIGHT_CYAN + BOLD
+    - Attempt markers (*Attempt N*): BRIGHT_BLACK + BG_YELLOW + BOLD
+    - Option markers (*Option X*): BRIGHT_MAGENTA + BOLD
+    - Self-corrections (-> Fail.): BRIGHT_RED + DIM
+    
+    Args:
+        text: The reasoning/thinking process text to highlight.
+        
+    Returns:
+        The text with ANSI color codes injected at delimiter points.
+    """
+    result = text
+    for pattern, colors in _REASONING_PATTERNS:
+        result = pattern.sub(lambda m: _wrap(m.group(1), *colors), result)
+    return result
+
+
+def reasoning_content(content: str, label: str = "THINKING PROCESS") -> str:
+    """
+    Format AI reasoning/thinking process with inline-highlighted delimiters.
+    
+    This function wraps the content label in a color and applies inline ANSI
+    highlighting to delimiter patterns within the content, preserving all
+    original formatting.
+    
+    Args:
+        content: The reasoning/thinking process text.
+        label: The label to display above the content.
+        
+    Returns:
+        The formatted string with colorized delimiters.
+    """
+    label_part = _wrap(f"{label}:", Color.BRIGHT_GREEN, Color.BOLD)
+    content_part = _highlight_reasoning(content)
+    return f"{label_part}\n{content_part}"
 
 
 # ─── Convenience printer ───────────────────────────────────────────────
@@ -360,38 +446,61 @@ class Formatter:
     def dim(self, text: str) -> None:
         print(dim(text))
 
-    def raw_request(self, payload: Any, highlight_keys: bool = True) -> None:
+    def reasoning_content(self, content: str, label: str = "THINKING PROCESS") -> None:
+        """Print reasoning/thinking process with inline-highlighted delimiters."""
+        print(reasoning_content(content, label))
+
+    def raw_request(self, payload: Any, highlight_keys: bool = True, highlight_reasoning: bool = True) -> None:
         """Print raw request. Always stored; printed if show_raw is True.
         
         Args:
             payload: The request payload to format.
             highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+            highlight_reasoning: Whether to highlight reasoning delimiters in JSON string values. Defaults to True.
         """
         self._raw_requests.append(payload)
         if self.show_raw:
-            print(raw_request(payload, highlight_keys=highlight_keys))
+            print(raw_request(
+                payload,
+                highlight_keys=highlight_keys,
+                highlight_reasoning=highlight_reasoning,
+            ))
 
-    def raw_response(self, response: Any, highlight_keys: bool = True) -> None:
+    def raw_response(self, response: Any, highlight_keys: bool = True, highlight_reasoning: bool = True) -> None:
         """Print raw response. Always stored; printed if show_raw is True.
         
         Args:
             response: The response to format.
             highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+            highlight_reasoning: Whether to highlight reasoning delimiters in JSON string values. Defaults to True.
         """
         self._raw_responses.append(response)
         if self.show_raw:
-            print(raw_response(response, highlight_keys=highlight_keys))
+            print(raw_response(
+                response,
+                highlight_keys=highlight_keys,
+                highlight_reasoning=highlight_reasoning,
+            ))
 
-    def print_all_raw(self, highlight_keys: bool = True) -> None:
+    def print_all_raw(self, highlight_keys: bool = True, highlight_reasoning: bool = True) -> None:
         """Print all collected raw requests and responses (if show_raw was False).
         
         Args:
             highlight_keys: Whether to highlight JSON object keys. Defaults to True.
+            highlight_reasoning: Whether to highlight reasoning delimiters in JSON string values. Defaults to True.
         """
         for req in self._raw_requests:
-            print(raw_request(req, highlight_keys=highlight_keys))
+            print(raw_request(
+                req,
+                highlight_keys=highlight_keys,
+                highlight_reasoning=highlight_reasoning,
+            ))
         for resp in self._raw_responses:
-            print(raw_response(resp, highlight_keys=highlight_keys))
+            print(raw_response(
+                resp,
+                highlight_keys=highlight_keys,
+                highlight_reasoning=highlight_reasoning,
+            ))
 
 
 # ─── Quick demo ────────────────────────────────────────────────────────
@@ -421,5 +530,42 @@ if __name__ == "__main__":
         "object": "chat.completion",
         "choices": [{"message": {"content": "Hello!"}}]
     })
+    f.print()
+
+    # Demo reasoning content highlighting
+    f.subheader("REASONING CONTENT HIGHLIGHTING DEMO")
+    f.print()
+    sample_reasoning = """Thinking Process:
+
+1.  **Deconstruct the request:**
+    *   Topic: Programming.
+    *   Form: Haiku (5-7-5 syllables).
+
+2.  **Brainstorming themes/imagery related to programming:**
+    *   Bugs, errors, fixing code.
+    *   Coffee, late nights.
+
+3.  **Drafting lines (aiming for 5-7-5):**
+    *   *Attempt 1:*
+        *   Code writes itself now (5)
+        *   But a bug breaks all the logic (7)
+        *   Fix it and run again (6) -> Fail.
+
+    *   *Attempt 2 (Classic bug focus):*
+        *   Search for missing semicolon (7)
+        *   Coffee fuels the long night (5)
+        *   Works at last, I smile (5)
+
+    *   *Option A:* Final polished version
+    *   *Option B:* Alternative approach
+
+4.  **Final Selection:**
+    *   I'll go with a variation of Attempt 2.
+
+5.  **Output Generation:**
+    Search for hidden bug,
+    Fix the code at midnight's end,
+    Works at last, I smile."""
+    f.reasoning_content(sample_reasoning)
     f.print()
     f.subheader("END OF DEMO")

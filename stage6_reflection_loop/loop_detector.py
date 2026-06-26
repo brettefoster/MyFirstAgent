@@ -47,16 +47,18 @@ class LoopDetector:
     3. Pattern detection - Repeating sequences of actions
     """
     
-    def __init__(self, window_size: int = 10, similarity_threshold: float = 0.8):
+    def __init__(self, window_size: int = 10, similarity_threshold: float = 0.8, repetition_threshold: int = 3):
         """
         Initialize the loop detector.
         
         Args:
             window_size: Number of recent steps to analyze.
             similarity_threshold: Threshold for semantic similarity (0-1).
+            repetition_threshold: Number of repetitions needed to flag a loop.
         """
         self.window_size = window_size
         self.similarity_threshold = similarity_threshold
+        self.repetition_threshold = repetition_threshold
         self.history: deque = deque(maxlen=window_size)
     
     def add_step(self, step: ExecutionStep) -> None:
@@ -341,7 +343,7 @@ def demo_loop_detector():
     print("Loop Detection and Backtracking")
     print("=" * 60 + "\n")
     
-    detector = LoopDetector(window_size=10)
+    detector = LoopDetector(window_size=10, repetition_threshold=3)
     
     # Simulate an execution with a loop
     print("SIMULATING EXECUTION WITH LOOP:")

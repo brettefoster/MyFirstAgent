@@ -285,6 +285,9 @@ def demo_client():
         
         if "content" in delta and delta["content"]:
             print(delta["content"], end="", flush=True)
+        elif "reasoning_content" in delta and delta["reasoning_content"]:
+            # Handle reasoning/thinking content (e.g., from models with CoT)
+            print(f"[{delta['reasoning_content']}]", end="", flush=True)
         elif "tool_calls" in delta and delta["tool_calls"]:
             print(f"\n[TOOL CALL: {delta['tool_calls']}]")
     

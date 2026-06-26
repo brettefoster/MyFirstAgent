@@ -84,6 +84,10 @@ A complete agent that:
 
 - `agent.py` - Complete agent implementation
 - `exercises.md` - Final integration exercises
+- `Dockerfile` - Containerization configuration
+- `Procfile` - Heroku deployment configuration  
+- `runtime.txt` - Python version specification
+- `deploy.md` - Deployment and monitoring guide
 
 ## Key Insight
 

@@ -71,10 +71,10 @@ def demo_token_cost_calculation():
     f.model_input("PROMPT", prompt)
     f.print()
 
-        payload = create_payload(
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
+    payload = create_payload(
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
 
     f.raw_request(payload)
 

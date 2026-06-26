@@ -1,4 +1,4 @@
-# Stage 6 Exercises
+# Stage 8 Exercises
 
 ## Exercise 1: Complete Integration Test
 
@@ -128,3 +128,9 @@ agent.load_plugins("plugins/")
 3. Add monitoring and logging
 
 **Expected outcome:** A working agent accessible via a public URL.
+
+**Note:** Deployment artifacts are included in this directory:
+- `Dockerfile` - Containerization configuration
+- `Procfile` - Heroku deployment configuration  
+- `runtime.txt` - Python version specification
+- `deploy.md` - Deployment and monitoring guide

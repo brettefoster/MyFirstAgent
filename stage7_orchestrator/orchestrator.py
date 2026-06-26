@@ -23,10 +23,10 @@ from dataclasses import dataclass, field
 # Import components from previous stages
 import sys
 sys.path.append('stage1_raw_sensor')
-sys.path.append('stage2_state_engine')
-sys.path.append('stage3_parsing_bridge')
-sys.path.append('stage4_sandboxed_hand')
-sys.path.append('stage5_reflection_loop')
+sys.path.append('stage3_state_engine')
+sys.path.append('stage4_parsing_bridge')
+sys.path.append('stage5_sandboxed_hand')
+sys.path.append('stage6_reflection_loop')
 
 from utils.api_client import APIClient, create_payload
 

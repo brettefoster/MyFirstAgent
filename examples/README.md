@@ -1,6 +1,23 @@
-# Stage 0 Examples
+# Stage Examples
 
-This directory contains executable example solutions for each exercise in Stage 0: "The API Foundation". These examples demonstrate core concepts of interacting with OpenAI-compatible API endpoints and can be used to verify your understanding or as reference implementations.
+This directory contains executable example solutions for each exercise across all stages. Each stage's examples demonstrate the core concepts of that stage's topic and can be used to verify your understanding or as reference implementations.
+
+---
+
+## Stage Overview
+
+| Stage | Topic |
+|-------|-------|
+| Stage 0 | The API Foundation - Basic API requests and responses |
+| Stage 1 | Raw Sensor - Streaming from the API |
+| Stage 2 | Thinking Observer - Observing thinking patterns |
+| Stage 3 | State Engine - Conversation state management |
+| Stage 4 | Parsing Bridge - Real-time tool call parsing |
+| Stage 5 | Sandboxed Hand - Tool registration and execution |
+| Stage 6 | Reflection Loop - Loop detection and error handling |
+| Stage 7 | The Orchestrator - Complete agent integration |
+
+---
 
 ## Quick Start
 
@@ -15,7 +32,26 @@ source .venv/bin/activate
 python3 examples/stage0/exercise_1.py
 ```
 
-## Exercise Overview
+## Running Individual Examples
+
+All examples must be run from the **project root directory** (not from within `examples/`):
+
+```bash
+# Run a single example
+python3 examples/stage0/exercise_1.py
+
+# Run all examples for a specific stage
+for i in {1..7}; do python3 examples/stage0/exercise_$i.py; done
+
+# Run all examples across all stages
+for stage in stage0 stage1 stage2 stage3 stage4 stage5 stage6 stage7; do
+  for i in {1..7}; do
+    python3 examples/$stage/exercise_$i.py
+  done
+done
+```
+
+## Stage 0: The API Foundation
 
 | File | Exercise | Topic |
 |------|----------|-------|
@@ -27,17 +63,90 @@ python3 examples/stage0/exercise_1.py
 | `exercise_6.py` | 6 | Error Handling - How the API responds to invalid requests |
 | `exercise_7.py` | 7 | Token Cost Calculation - Understanding API usage costs |
 
-## Running Individual Examples
+## Stage 1: Raw Sensor
 
-All examples must be run from the **project root directory** (not from within `examples/`):
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Measure Token Latency - Tracking token count and timing |
+| `exercise_2.py` | 2 | Inter-Token Latency - Measuring time between tokens |
+| `exercise_3.py` | 3 | Time-To-First-Token - Measuring TTFT |
+| `exercise_4.py` | 4 | Response Summary - Generating summary statistics |
+| `exercise_5.py` | 5 | Streaming vs Non-Streaming - Comparing response modes |
+| `exercise_6.py` | 6 | Multiple Prompts - Running several requests in sequence |
+| `exercise_7.py` | 7 | Performance Profiling - Comprehensive performance analysis |
 
-```bash
-# Run a single example
-python3 examples/stage0/exercise_1.py
+## Stage 2: Thinking Observer
 
-# Run all examples sequentially
-for i in {1..7}; do python3 examples/stage0/exercise_$i.py; done
-```
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Simulated Thinking Block Parsing - Detecting thinking vs answer |
+| `exercise_2.py` | 2 | Real Stream Thinking Detection - Live thinking observation |
+| `exercise_3.py` | 3 | Thinking Content Extraction - Getting thinking content |
+| `exercise_4.py` | 4 | Multiple Thinking Patterns - Different thinking block formats |
+| `exercise_5.py` | 5 | Thinking Length Analysis - Measuring thinking content |
+| `exercise_6.py` | 6 | Edge Cases - Handling missing or malformed thinking |
+| `exercise_7.py` | 7 | Thinking vs Answer Comparison - Comparing both content types |
+
+## Stage 3: State Engine
+
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Basic State Management - Understanding state growth |
+| `exercise_2.py` | 2 | Context Window Limits - What happens at limits |
+| `exercise_3.py` | 3 | System Instructions - Different system prompt effects |
+| `exercise_4.py` | 4 | Message History - Full conversation history inspection |
+| `exercise_5.py` | 5 | State Compilation - Understanding payload format |
+| `exercise_6.py` | 6 | Error Handling in State - Managing state errors |
+| `exercise_7.py` | 7 | State Summary - Comprehensive state analysis |
+
+## Stage 4: Parsing Bridge
+
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Basic Stream Parsing - Detecting tool calls in streams |
+| `exercise_2.py` | 2 | Multiple Tool Calls - Parsing multiple calls |
+| `exercise_3.py` | 3 | Partial JSON Handling - Handling incomplete JSON |
+| `exercise_4.py` | 4 | Tool Schema Integration - Using tool schemas |
+| `exercise_5.py` | 5 | Buffer Management - Understanding pending text |
+| `exercise_6.py` | 6 | Edge Cases - Handling malformed input |
+| `exercise_7.py` | 7 | Performance Analysis - Parsing speed measurement |
+
+## Stage 5: Sandboxed Hand
+
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Basic Tool Registration - How tools are registered |
+| `exercise_2.py` | 2 | Tool Execution - Running registered tools |
+| `exercise_3.py` | 3 | Error Handling in Tools - Tool error management |
+| `exercise_4.py` | 4 | Type Safety - Type annotation handling |
+| `exercise_5.py` | 5 | Custom Tool Development - Building new tools |
+| `exercise_6.py` | 6 | Tool Schema Generation - Schema format understanding |
+| `exercise_7.py` | 7 | Registry Analysis - Comprehensive registry inspection |
+
+## Stage 6: Reflection Loop
+
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Basic Loop Detection - Identifying repeating patterns |
+| `exercise_2.py` | 2 | Window Size Effects - How window size affects detection |
+| `exercise_3.py` | 3 | Repetition Threshold - Threshold tuning |
+| `exercise_4.py` | 4 | Backtracking - Restoring state after loops |
+| `exercise_5.py` | 5 | Error Formatting - Error message formatting |
+| `exercise_6.py` | 6 | Complex Loop Patterns - Detecting complex patterns |
+| `exercise_7.py` | 7 | Loop Detection Analysis - Comprehensive analysis |
+
+## Stage 7: The Orchestrator
+
+| File | Exercise | Topic |
+|------|----------|-------|
+| `exercise_1.py` | 1 | Basic Orchestrator Run - How components work together |
+| `exercise_2.py` | 2 | Interactive Session - Tool selection decision making |
+| `exercise_3.py` | 3 | Multi-Turn Conversation - Context retention testing |
+| `exercise_4.py` | 4 | Add Custom Tools - Extending with new functionality |
+| `exercise_5.py` | 5 | Configure Agent Behavior - Configuration effects |
+| `exercise_6.py` | 6 | Add Thinking Visualization - Reasoning insights |
+| `exercise_7.py` | 7 | Build a ReAct Agent - Reason-Act-Observe pattern |
+| `exercise_8.py` | 8 | Add Logging and Tracing - Debugging metrics |
 
 ## Requirements
 
